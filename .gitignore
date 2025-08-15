@@ -1,0 +1,45 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build output
+dist/
+build/
+
+# Coverage directory used by testing tools
+coverage/
+.nyc_output/
+
+# Optional npm cache directory
+.npm/
+
+# dotenv environment variables file
+.env
+.env.*.local
+.env.local
+.env.*.secret
+
+# Test output
+test-output/
+reports/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
