@@ -14,13 +14,13 @@ router.post('/register', async (req, res) => {
 
     if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) return res.status(409).json({ message: 'Email already registered' });
+  const existing = await prisma.student.findUnique({ where: { email } });
+  if (existing) return res.status(409).json({ message: 'Email already registered' });
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({ data: { email, password: hash } });
-    const { password: _, ...userInfo } = user;
-    res.status(201).json(userInfo);
+  const hash = await bcrypt.hash(password, 10);
+  const student = await prisma.student.create({ data: { email, passwordHash: hash, name: email } });
+  const { passwordHash: _, ...studentInfo } = student;
+  res.status(201).json(studentInfo);
 
   } catch (err) {
     res.status(500).json({ message: 'Registration failed' });
@@ -28,9 +28,9 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', (req, res, next) => {
-  passport.authenticate('local', { session: false }, (err: unknown, user: User | false | undefined, info: { message?: string } | undefined) => {
-    if (err || !user) return res.status(401).json({ message: info?.message || 'Login failed' });
-    const token = signJwt(user as User);
+  passport.authenticate('local', { session: false }, (err: unknown, student: any | false | undefined, info: { message?: string } | undefined) => {
+    if (err || !student) return res.status(401).json({ message: info?.message || 'Login failed' });
+    const token = signJwt(student, 'user');
     res.json({ token });
   })(req, res, next);
 });

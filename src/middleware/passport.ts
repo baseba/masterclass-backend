@@ -10,11 +10,11 @@ const prisma = new PrismaClient();
 passport.use(
   new LocalStrategy({ usernameField: 'email', passwordField: 'password' }, async (email: string, password: string, done: (error: any, user?: any, info?: any) => void) => {
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) return done(null, false, { message: 'Incorrect email.' });
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return done(null, false, { message: 'Incorrect password.' });
-      return done(null, user);
+  const student = await prisma.student.findUnique({ where: { email } });
+  if (!student) return done(null, false, { message: 'Incorrect email.' });
+  const valid = await bcrypt.compare(password, student.passwordHash);
+  if (!valid) return done(null, false, { message: 'Incorrect password.' });
+  return done(null, student);
     } catch (err) {
       return done(err);
     }
@@ -30,9 +30,9 @@ passport.use(
     },
     async (payload: any, done: (error: any, user?: any, info?: any) => void) => {
       try {
-        const user = await prisma.user.findUnique({ where: { id: payload.id } });
-        if (!user) return done(null, false);
-        return done(null, user);
+  const student = await prisma.student.findUnique({ where: { id: payload.id } });
+  if (!student) return done(null, false);
+  return done(null, student);
       } catch (err) {
         return done(err, false);
       }
