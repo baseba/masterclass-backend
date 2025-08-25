@@ -9,3 +9,97 @@ pnpm install
 pnpm run prisma:generate
 pnpm run dev
 ```
+
+## Database Schema
+
+This project uses a normalized relational schema for a course booking platform. Below are the main entities, enums, and relationships:
+
+### Models
+
+- **Professor**: Teacher/owner of courses.
+	- Fields: `id`, `name`, `email`, `bio`, `profilePictureUrl`
+	- Relationships: Has many `courses`, manages `slots`.
+
+- **Student**: User who books classes.
+	- Fields: `id`, `name`, `email`, `passwordHash`, `phone`
+	- Relationships: Can book `slots` via `reservations`, has many `payments`.
+
+- **Course**: Collection of classes.
+	- Fields: `id`, `professorId`, `title`, `description`, `isActive`
+	- Relationships: Has many `classes`.
+
+- **Class**: Single unit of learning.
+	- Fields: `id`, `courseId`, `title`, `description`, `objectives`, `orderIndex`, `basePrice`
+	- Relationships: Can be scheduled in multiple `slots`, has many `materials`.
+
+- **Slot**: Scheduled instance of a class.
+	- Fields: `id`, `classId`, `professorId`, `startTime`, `endTime`, `modality`, `status`, `minStudents`, `maxStudents`
+	- Relationships: Has many `reservations`.
+
+- **Reservation**: Student's booking of a slot.
+	- Fields: `id`, `studentId`, `slotId`, `status`, `paymentId`
+	- Relationships: Links `student` and `slot`, tracks attendance and payment.
+
+- **Payment**: Records transactions.
+	- Fields: `id`, `studentId`, `amount`, `currency`, `status`, `paymentProvider`, `transactionReference`, `createdAt`
+	- Relationships: Can cover multiple `reservations`.
+
+- **Material**: Learning resources tied to a class.
+	- Fields: `id`, `classId`, `type`, `url`, `accessPolicy`
+	- Relationships: Unlocked when student purchases class/course.
+
+### Enums
+
+- `SlotModality`: `group`, `private`
+- `SlotStatus`: `candidate`, `confirmed`, `completed`, `cancelled`
+- `ReservationStatus`: `pending`, `confirmed`, `cancelled`, `attended`, `no_show`
+- `PaymentStatus`: `pending`, `paid`, `failed`, `refunded`
+- `MaterialType`: `guide`, `slides`, `exercises`, `solutions`, `recording`
+- `AccessPolicy`: `pre_class`, `post_class`, `no_show_restricted`
+
+### Indexes
+
+- Indexes are added for performance on `studentId`, `slotId`, `status` where relevant.
+
+### Business Rules
+
+- Progressive discounts for multiple class purchases (checkout logic).
+- Group slots require quorum to confirm; private slots are confirmed immediately.
+- Materials access depends on purchase and attendance.
+
+For full schema details, see `prisma/schema.prisma`.
+
+
+## Admin API Routes
+
+These routes are available to authenticated admins:
+
+### Authentication
+- `POST /admin/login`
+	- Authenticate as admin. Returns JWT token.
+	- Body: `{ email, password }`
+
+### Professor Management
+- `GET /professor`
+	- List all professors.
+- `GET /professor/:id`
+	- Get details of a professor by ID.
+- `POST /professor/promote/:studentId`
+	- Promote a student to professor. Creates a professor entry from an existing student.
+	- Returns 409 if already a professor, 404 if student not found.
+
+### Course Management
+- `GET /course`
+	- List all courses (with assigned professor and classes).
+- `GET /course/:id`
+	- Get details of a course by ID.
+- `POST /course`
+	- Create a new course and assign a professor.
+	- Body: `{ title, description, professorId, isActive }`
+- `PUT /course/:id`
+	- Update a course.
+	- Body: `{ title, description, professorId, isActive }`
+- `DELETE /course/:id`
+	- Delete a course.
+
+All routes (except `/admin/login`) require the admin JWT in the `Authorization` header: `Bearer <token>`.

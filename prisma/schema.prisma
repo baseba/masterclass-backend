@@ -5,9 +5,152 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+
+// Enums
+enum SlotModality {
+  group
+  private
+}
+
+enum SlotStatus {
+  candidate
+  confirmed
+  completed
+  cancelled
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  cancelled
+  attended
+  no_show
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum MaterialType {
+  guide
+  slides
+  exercises
+  solutions
+  recording
+}
+
+enum AccessPolicy {
+  pre_class
+  post_class
+  no_show_restricted
+}
+
+model Professor {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  email              String   @unique
+  bio                String?
+  profilePictureUrl  String?
+  courses            Course[]
+  slots              Slot[]
+}
+
+model Student {
+  id           Int         @id @default(autoincrement())
+  name         String
+  email        String      @unique
+  passwordHash String
+  phone        String?
+  reservations Reservation[]
+  payments     Payment[]
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  professor   Professor @relation(fields: [professorId], references: [id])
+  professorId Int
+  title       String
+  description String
+  isActive    Boolean   @default(true)
+  classes     Class[]
+}
+
+model Class {
+  id          Int      @id @default(autoincrement())
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    Int
+  title       String
+  description String
+  objectives  String?
+  orderIndex  Int
+  basePrice   Float
+  slots       Slot[]
+  materials   Material[]
+}
+
+model Slot {
+  id           Int           @id @default(autoincrement())
+  class        Class         @relation(fields: [classId], references: [id])
+  classId      Int
+  professor    Professor     @relation(fields: [professorId], references: [id])
+  professorId  Int
+  startTime    DateTime
+  endTime      DateTime
+  modality     SlotModality
+  status       SlotStatus    @default(candidate)
+  minStudents  Int?
+  maxStudents  Int
+  reservations Reservation[]
+  @@index([professorId])
+  @@index([classId])
+  @@index([status])
+}
+
+model Reservation {
+  id         Int              @id @default(autoincrement())
+  student    Student          @relation(fields: [studentId], references: [id])
+  studentId  Int
+  slot       Slot             @relation(fields: [slotId], references: [id])
+  slotId     Int
+  status     ReservationStatus @default(pending)
+  payment    Payment?         @relation(fields: [paymentId], references: [id])
+  paymentId  Int?
+  @@index([studentId])
+  @@index([slotId])
+  @@index([status])
+}
+
+model Payment {
+  id                  Int           @id @default(autoincrement())
+  student             Student       @relation(fields: [studentId], references: [id])
+  studentId           Int
+  amount              Float
+  currency            String
+  status              PaymentStatus @default(pending)
+  paymentProvider     String
+  transactionReference String
+  createdAt           DateTime      @default(now())
+  reservations        Reservation[]
+  @@index([studentId])
+  @@index([status])
+}
+
+model Material {
+  id           Int          @id @default(autoincrement())
+  class        Class        @relation(fields: [classId], references: [id])
+  classId      Int
+  type         MaterialType
+  url          String
+  accessPolicy AccessPolicy
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
 }
