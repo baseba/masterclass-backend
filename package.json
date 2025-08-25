@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev --name init --force",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prisma:reset": "prisma migrate reset",
+    "prisma:reset": "prisma migrate reset --force",
     "delete:migrations": "rm -rf prisma/migrations/*"
   },
   "keywords": [],
