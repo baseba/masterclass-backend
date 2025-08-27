@@ -6,13 +6,13 @@ const prisma = new PrismaClient();
 const router = Router();
 
 // List all courses
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   const courses = await prisma.course.findMany({ include: { professor: true, classes: true } });
   res.json(courses);
 });
 
 // Get course by ID
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
   const course = await prisma.course.findUnique({
     where: { id: Number(req.params.id) },
     include: { professor: true, classes: true },
