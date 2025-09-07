@@ -9,6 +9,7 @@ import adminRouter from './routes/admin';
 import professorRouter from './routes/professor/professors';
 import courseRouter from './routes/course/courses';
 import authenticateJwt from './middleware/authenticateJwt';
+import sessionRouter from './routes/course/sessions';
 
 
 const app = express();

@@ -1,9 +1,12 @@
+import sessionRouter from './sessions';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import authenticateAdmin from '../../middleware/authenticateAdmin';
 
 const prisma = new PrismaClient();
 const router = Router();
+// Mount session routes under each course
+router.use('/:courseId/sessions', sessionRouter);
 
 // List all courses
 router.get('/', async (req, res) => {
