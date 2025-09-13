@@ -9,6 +9,8 @@ import professorRouter from "./routes/professor/professors";
 import courseRouter from "./routes/course/courses";
 import authenticateJwt from "./middleware/authenticateJwt";
 import slotRouter from "./controllers/slots.controller";
+import sessionRouter from "./routes/course/sessions";
+
 const allowedOrigins = ["http://localhost:4321", "https://tu-dominio.com"];
 
 const app = express();
