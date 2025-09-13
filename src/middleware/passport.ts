@@ -30,9 +30,15 @@ passport.use(
     },
     async (payload: any, done: (error: any, user?: any, info?: any) => void) => {
       try {
-  const student = await prisma.student.findUnique({ where: { id: payload.id } });
-  if (!student) return done(null, false);
-  return done(null, student);
+        if (payload.role === 'admin') {
+          const admin = await prisma.admin.findUnique({ where: { id: payload.id } });
+          if (!admin) return done(null, false);
+          return done(null, { ...admin, role: 'admin' });
+        } else {
+          const student = await prisma.student.findUnique({ where: { id: payload.id } });
+          if (!student) return done(null, false);
+          return done(null, { ...student, role: 'user' });
+        }
       } catch (err) {
         return done(err, false);
       }

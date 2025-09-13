@@ -89,6 +89,7 @@ These routes are available to authenticated admins:
 	- Returns 409 if already a professor, 404 if student not found.
 
 ### Course Management
+### Course Management
 - `GET /course`
 	- List all courses (with assigned professor and classes).
 - `GET /course/:id`
@@ -101,5 +102,29 @@ These routes are available to authenticated admins:
 	- Body: `{ title, description, professorId, isActive }`
 - `DELETE /course/:id`
 	- Delete a course.
+
+## Session (Class) API Routes
+
+Session routes are nested under courses and require authentication (admin or assigned professor):
+
+- `GET /course/:courseId/sessions`
+	- List all sessions (classes) in a course.
+- `GET /course/:courseId/sessions/:sessionId`
+	- Get details of a session by ID.
+- `POST /course/:courseId/sessions`
+	- Create a new session in a course.
+	- Body: `{ title, description, objectives, orderIndex, basePrice }`
+- `PUT /course/:courseId/sessions/:sessionId`
+	- Update a session.
+	- Body: `{ title, description, objectives, orderIndex, basePrice }`
+- `DELETE /course/:courseId/sessions/:sessionId`
+	- Delete a session.
+
+**Access Control:**
+- Admins can manage any session.
+- Professors can manage sessions only in their assigned courses.
+- Other users receive 403 Forbidden or 401 Unauthorized.
+
+All session routes require a valid JWT in the `Authorization` header: `Bearer <token>`.
 
 All routes (except `/admin/login`) require the admin JWT in the `Authorization` header: `Bearer <token>`.
