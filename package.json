@@ -11,7 +11,9 @@
     "prisma:migrate:dev": "prisma migrate dev --name init",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prisma:reset": "prisma migrate reset --force",
+    "prisma:seed": "ts-node-dev prisma/seed.ts",
     "delete:migrations": "rm -rf prisma/migrations/*"
+
   },
   "keywords": [],
   "author": "",
