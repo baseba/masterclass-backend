@@ -10,6 +10,27 @@ router.use('/:courseId/sessions', sessionRouter);
 
 // List all courses
 router.get('/', async (req, res) => {
+  const { studentId } = req.query;
+  if (studentId) {
+    // Find all courses where the student has a reservation in any slot of any class in the course
+    const studentCourses = await prisma.course.findMany({
+      where: {
+        classes: {
+          some: {
+            slots: {
+              some: {
+                reservations: {
+                  some: { studentId: Number(studentId) }
+                }
+              }
+            }
+          }
+        }
+      },
+      include: { professor: true, classes: true },
+    });
+    return res.json(studentCourses);
+  }
   const courses = await prisma.course.findMany({ include: { professor: true, classes: true } });
   res.json(courses);
 });

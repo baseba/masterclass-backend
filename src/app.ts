@@ -1,3 +1,4 @@
+import morgan from "morgan";
 import express from "express";
 import passport from "passport";
 import bodyParser from "body-parser";
@@ -11,17 +12,19 @@ import authenticateJwt from "./middleware/authenticateJwt";
 import slotRouter from "./controllers/slots.controller";
 import sessionRouter from "./routes/course/sessions";
 
-const allowedOrigins = ["http://localhost:4321", "https://tu-dominio.com"];
+const allowedOrigins = ["http://localhost:4321/", "https://tu-dominio.com/"];
+
 
 const app = express();
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: "*",
     credentials: true,
   })
 );
 app.use(bodyParser.json());
 app.use(passport.initialize());
+app.use(morgan("dev"));
 
 app.use("/auth", authRouter);
 app.use("/admin", adminRouter);

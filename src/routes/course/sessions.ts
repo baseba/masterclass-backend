@@ -38,7 +38,7 @@ router.post('/', authenticateJwt, sessionAccessControl, async (req, res) => {
 });
 
 // List sessions in course
-router.get('/', authenticateJwt, sessionAccessControl, async (req, res) => {
+router.get('/', authenticateJwt, async (req, res) => {
   const courseId = Number(req.params.courseId);
   const sessions = await prisma.class.findMany({ where: { courseId } });
   res.json(sessions);
