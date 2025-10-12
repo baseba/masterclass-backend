@@ -11,8 +11,9 @@ import courseRouter from './routes/course/courses';
 import authenticateJwt from './middleware/authenticateJwt';
 import slotRouter from './controllers/slots.controller';
 import sessionRouter from './routes/course/sessions';
+import reservationRouter from './controllers/reservations.controller';
 
-const allowedOrigins = ['http://localhost:4321'];
+const allowedOrigins = ['http://localhost:4321/', 'https://tu-dominio.com/'];
 
 const app = express();
 app.use(
@@ -23,7 +24,7 @@ app.use(
 );
 app.use(bodyParser.json());
 app.use(passport.initialize());
-// Log body only for POST/PUT/PATCH
+
 morgan.token('body', (req: any) => {
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) return '';
   return 'body: ' + JSON.stringify(req.body);
@@ -38,6 +39,7 @@ app.use('/admin', adminRouter);
 app.use('/professors', professorRouter);
 app.use('/courses', courseRouter);
 app.use('/slots', slotRouter);
+app.use('/reservations', reservationRouter);
 app.use('/', helloRouter);
 
 app.get('/public', (req, res) => {
