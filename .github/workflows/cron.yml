@@ -14,4 +14,4 @@ jobs:
     steps:
       - name: Call Render Cron Endpoint
         run: |
-          curl -X GET "https://your-app-name.onrender.com/cron/daily-job?key=${CRON_KEY}"
+          curl -X GET "https://masterclass-backend-gcne.onrender.com/cron/daily-job?key=${CRON_KEY}"

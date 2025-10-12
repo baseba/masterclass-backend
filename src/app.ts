@@ -12,6 +12,7 @@ import authenticateJwt from "./middleware/authenticateJwt";
 import slotRouter from "./controllers/slots.controller";
 import sessionRouter from "./routes/course/sessions";
 import reservationRouter from "./controllers/reservations.controller";
+import cronjobsController from "./controllers/cronjobs.controller";
 
 const allowedOrigins = ["http://localhost:4321", "https://tu-dominio.com"];
 
@@ -32,6 +33,7 @@ app.use("/professors", professorRouter);
 app.use("/courses", courseRouter);
 app.use("/slots", slotRouter);
 app.use("/reservations", reservationRouter);
+app.use("/cron", cronjobsController);
 app.use("/", helloRouter);
 
 app.get("/public", (req, res) => {
