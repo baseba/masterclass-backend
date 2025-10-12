@@ -13,3 +13,4 @@ router.post("/daily-job", async (req, res) => {
   res.send("Job ran!");
 });
 
+export default router;
