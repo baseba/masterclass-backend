@@ -1,5 +1,8 @@
 -- CreateEnum
-CREATE TYPE "public"."SlotModality" AS ENUM ('group', 'private');
+CREATE TYPE "public"."SlotModality" AS ENUM ('remote', 'onsite');
+
+-- CreateEnum
+CREATE TYPE "public"."SlotStudentsGroup" AS ENUM ('group', 'private');
 
 -- CreateEnum
 CREATE TYPE "public"."SlotStatus" AS ENUM ('candidate', 'confirmed', 'completed', 'cancelled');
@@ -21,6 +24,9 @@ CREATE TABLE "public"."Professor" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "passwordHash" TEXT NOT NULL,
+    "phone" TEXT,
+    "rut" TEXT NOT NULL,
     "bio" TEXT,
     "profilePictureUrl" TEXT,
 
@@ -34,6 +40,8 @@ CREATE TABLE "public"."Student" (
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "phone" TEXT,
+    "rut" TEXT NOT NULL,
+    "address" TEXT,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
@@ -41,7 +49,6 @@ CREATE TABLE "public"."Student" (
 -- CreateTable
 CREATE TABLE "public"."Course" (
     "id" SERIAL NOT NULL,
-    "professorId" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
@@ -70,6 +77,8 @@ CREATE TABLE "public"."Slot" (
     "startTime" TIMESTAMP(3) NOT NULL,
     "endTime" TIMESTAMP(3) NOT NULL,
     "modality" "public"."SlotModality" NOT NULL,
+    "studentsGroup" "public"."SlotStudentsGroup" NOT NULL,
+    "location" TEXT,
     "status" "public"."SlotStatus" NOT NULL DEFAULT 'candidate',
     "minStudents" INTEGER,
     "maxStudents" INTEGER NOT NULL,
@@ -124,11 +133,33 @@ CREATE TABLE "public"."Admin" (
     CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "public"."_CourseToProfessor" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_CourseToProfessor_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "public"."_CourseToStudent" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_CourseToStudent_AB_pkey" PRIMARY KEY ("A","B")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Professor_email_key" ON "public"."Professor"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Professor_rut_key" ON "public"."Professor"("rut");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Student_email_key" ON "public"."Student"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_rut_key" ON "public"."Student"("rut");
 
 -- CreateIndex
 CREATE INDEX "Slot_professorId_idx" ON "public"."Slot"("professorId");
@@ -157,8 +188,11 @@ CREATE INDEX "Payment_status_idx" ON "public"."Payment"("status");
 -- CreateIndex
 CREATE UNIQUE INDEX "Admin_email_key" ON "public"."Admin"("email");
 
--- AddForeignKey
-ALTER TABLE "public"."Course" ADD CONSTRAINT "Course_professorId_fkey" FOREIGN KEY ("professorId") REFERENCES "public"."Professor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "_CourseToProfessor_B_index" ON "public"."_CourseToProfessor"("B");
+
+-- CreateIndex
+CREATE INDEX "_CourseToStudent_B_index" ON "public"."_CourseToStudent"("B");
 
 -- AddForeignKey
 ALTER TABLE "public"."Class" ADD CONSTRAINT "Class_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "public"."Course"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -183,3 +217,15 @@ ALTER TABLE "public"."Payment" ADD CONSTRAINT "Payment_studentId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "public"."Material" ADD CONSTRAINT "Material_classId_fkey" FOREIGN KEY ("classId") REFERENCES "public"."Class"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_CourseToProfessor" ADD CONSTRAINT "_CourseToProfessor_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_CourseToProfessor" ADD CONSTRAINT "_CourseToProfessor_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."Professor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_CourseToStudent" ADD CONSTRAINT "_CourseToStudent_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_CourseToStudent" ADD CONSTRAINT "_CourseToStudent_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;

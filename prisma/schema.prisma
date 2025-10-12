@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -8,6 +9,11 @@ datasource db {
 
 // Enums
 enum SlotModality {
+  remote
+  onsite
+}
+
+enum SlotStudentsGroup {
   group
   private
 }
@@ -49,38 +55,44 @@ enum AccessPolicy {
 }
 
 model Professor {
-  id                 Int      @id @default(autoincrement())
-  name               String
-  email              String   @unique
-  bio                String?
-  profilePictureUrl  String?
-  courses            Course[]
-  slots              Slot[]
+  id                Int      @id @default(autoincrement())
+  name              String
+  email             String   @unique
+  passwordHash      String
+  phone             String?
+  rut               String   @unique
+  bio               String?
+  profilePictureUrl String?
+  courses           Course[]
+  slots             Slot[]
 }
 
 model Student {
-  id           Int         @id @default(autoincrement())
+  id           Int           @id @default(autoincrement())
   name         String
-  email        String      @unique
+  email        String        @unique
   passwordHash String
   phone        String?
+  rut          String        @unique
+  courses      Course[]
   reservations Reservation[]
   payments     Payment[]
+  address      String?
 }
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  professor   Professor @relation(fields: [professorId], references: [id])
-  professorId Int
+  id          Int         @id @default(autoincrement())
+  professors  Professor[]
   title       String
   description String
-  isActive    Boolean   @default(true)
+  isActive    Boolean     @default(true)
   classes     Class[]
+  students    Student[]
 }
 
 model Class {
-  id          Int      @id @default(autoincrement())
-  course      Course   @relation(fields: [courseId], references: [id])
+  id          Int        @id @default(autoincrement())
+  course      Course     @relation(fields: [courseId], references: [id])
   courseId    Int
   title       String
   description String
@@ -92,48 +104,53 @@ model Class {
 }
 
 model Slot {
-  id           Int           @id @default(autoincrement())
-  class        Class         @relation(fields: [classId], references: [id])
-  classId      Int
-  professor    Professor     @relation(fields: [professorId], references: [id])
-  professorId  Int
-  startTime    DateTime
-  endTime      DateTime
-  modality     SlotModality
-  status       SlotStatus    @default(candidate)
-  minStudents  Int?
-  maxStudents  Int
-  reservations Reservation[]
+  id            Int               @id @default(autoincrement())
+  class         Class             @relation(fields: [classId], references: [id])
+  classId       Int
+  professor     Professor         @relation(fields: [professorId], references: [id])
+  professorId   Int
+  startTime     DateTime
+  endTime       DateTime
+  modality      SlotModality
+  studentsGroup SlotStudentsGroup
+  location      String?
+  status        SlotStatus        @default(candidate)
+  minStudents   Int?
+  maxStudents   Int
+  reservations  Reservation[]
+
   @@index([professorId])
   @@index([classId])
   @@index([status])
 }
 
 model Reservation {
-  id         Int              @id @default(autoincrement())
-  student    Student          @relation(fields: [studentId], references: [id])
-  studentId  Int
-  slot       Slot             @relation(fields: [slotId], references: [id])
-  slotId     Int
-  status     ReservationStatus @default(pending)
-  payment    Payment?         @relation(fields: [paymentId], references: [id])
-  paymentId  Int?
+  id        Int               @id @default(autoincrement())
+  student   Student           @relation(fields: [studentId], references: [id])
+  studentId Int
+  slot      Slot              @relation(fields: [slotId], references: [id])
+  slotId    Int
+  status    ReservationStatus @default(pending)
+  payment   Payment?          @relation(fields: [paymentId], references: [id])
+  paymentId Int?
+
   @@index([studentId])
   @@index([slotId])
   @@index([status])
 }
 
 model Payment {
-  id                  Int           @id @default(autoincrement())
-  student             Student       @relation(fields: [studentId], references: [id])
-  studentId           Int
-  amount              Float
-  currency            String
-  status              PaymentStatus @default(pending)
-  paymentProvider     String
+  id                   Int           @id @default(autoincrement())
+  student              Student       @relation(fields: [studentId], references: [id])
+  studentId            Int
+  amount               Float
+  currency             String
+  status               PaymentStatus @default(pending)
+  paymentProvider      String
   transactionReference String
-  createdAt           DateTime      @default(now())
-  reservations        Reservation[]
+  createdAt            DateTime      @default(now())
+  reservations         Reservation[]
+
   @@index([studentId])
   @@index([status])
 }
