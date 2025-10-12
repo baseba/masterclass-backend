@@ -51,7 +51,12 @@ router.post('/', authenticateAdmin, async (req, res) => {
   if (!title || !professorId) return res.status(400).json({ message: 'Title and professorId required' });
   try {
     const course = await prisma.course.create({
-      data: { title, description, professorId, isActive: isActive ?? true },
+      data: {
+        title,
+        description,
+        professors: { connect: { id: professorId } },
+        isActive: isActive ?? true,
+      },
     });
     res.status(201).json(course);
   } catch (err) {
@@ -65,7 +70,12 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
   try {
     const course = await prisma.course.update({
       where: { id: Number(req.params.id) },
-      data: { title, description, professorId, isActive },
+      data: {
+        title,
+        description,
+        professors: { connect: { id: professorId } },
+        isActive,
+      },
     });
     res.json(course);
   } catch (err) {
