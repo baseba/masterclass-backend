@@ -32,8 +32,10 @@ router.post('/promote/:studentId', authenticateAdmin, async (req, res) => {
     data: {
       name: student.name,
       email: student.email,
+      passwordHash: student.passwordHash,
       bio: '',
       profilePictureUrl: '',
+      rut: student.rut,
     },
   });
   res.status(201).json(professor);
