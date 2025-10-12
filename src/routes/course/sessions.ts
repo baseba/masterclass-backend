@@ -47,8 +47,9 @@ router.get('/', authenticateJwt, async (req, res) => {
 // Get session by id
 router.get('/:sessionId', authenticateJwt, async (req, res) => {
   const sessionId = Number(req.params.sessionId);
-  const session = await prisma.class.findUnique({ where: { id: sessionId } });
-  if (!session) return res.status(404).json({ message: 'Session not found' });
+  // Morgan will log sessionId via custom token
+  const session = await prisma.class.findUnique({ where: { id: Number(req.params.sessionId) } });
+  if (!session) return res.status(401).json({ message: 'Session not found' });
   res.json(session);
 });
 
