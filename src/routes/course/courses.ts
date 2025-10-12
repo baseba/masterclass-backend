@@ -20,18 +20,20 @@ router.get('/', async (req, res) => {
             slots: {
               some: {
                 reservations: {
-                  some: { studentId: Number(studentId) }
-                }
-              }
-            }
-          }
-        }
+                  some: { studentId: Number(studentId) },
+                },
+              },
+            },
+          },
+        },
       },
-      include: { professor: true, classes: true },
+      include: { professors: true, classes: true },
     });
     return res.json(studentCourses);
   }
-  const courses = await prisma.course.findMany({ include: { professor: true, classes: true } });
+  const courses = await prisma.course.findMany({
+    include: { professors: true, classes: true },
+  });
   res.json(courses);
 });
 
@@ -39,7 +41,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const course = await prisma.course.findUnique({
     where: { id: Number(req.params.id) },
-    include: { professor: true, classes: true },
+    include: { professors: true, classes: true },
   });
   if (!course) return res.status(404).json({ message: 'Course not found' });
   res.json(course);
@@ -48,7 +50,8 @@ router.get('/:id', async (req, res) => {
 // Create a course and assign professor
 router.post('/', authenticateAdmin, async (req, res) => {
   const { title, description, professorId, isActive } = req.body;
-  if (!title || !professorId) return res.status(400).json({ message: 'Title and professorId required' });
+  if (!title || !professorId)
+    return res.status(400).json({ message: 'Title and professorId required' });
   try {
     const course = await prisma.course.create({
       data: {
@@ -79,7 +82,9 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
     });
     res.json(course);
   } catch (err) {
-    res.status(404).json({ message: 'Course not found or update failed', error: err });
+    res
+      .status(404)
+      .json({ message: 'Course not found or update failed', error: err });
   }
 });
 
@@ -89,7 +94,9 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     await prisma.course.delete({ where: { id: Number(req.params.id) } });
     res.status(204).send();
   } catch (err) {
-    res.status(404).json({ message: 'Course not found or delete failed', error: err });
+    res
+      .status(404)
+      .json({ message: 'Course not found or delete failed', error: err });
   }
 });
 

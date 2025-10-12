@@ -14,10 +14,16 @@ async function sessionAccessControl(req: any, res: any, next: any) {
   if (user.role === 'admin') return next();
 
   // Professors: check if user is assigned professor for the course
-  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: { professors: true },
+  });
   if (!course) return res.status(404).json({ message: 'Course not found' });
-  const professor = await prisma.professor.findUnique({ where: { email: user.email } });
-  if (professor && course.professorId === professor.id) return next();
+  const professor = await prisma.professor.findUnique({
+    where: { email: user.email },
+  });
+  if (professor && course.professors.some((p) => p.id === professor.id))
+    return next();
 
   return res.status(403).json({ message: 'Forbidden' });
 }
@@ -47,35 +53,51 @@ router.get('/', authenticateJwt, async (req, res) => {
 router.get('/:sessionId', authenticateJwt, async (req, res) => {
   const sessionId = Number(req.params.sessionId);
   // Morgan will log sessionId via custom token
-  const session = await prisma.class.findUnique({ where: { id: Number(req.params.sessionId) } });
+  const session = await prisma.class.findUnique({
+    where: { id: Number(req.params.sessionId) },
+  });
   if (!session) return res.status(401).json({ message: 'Session not found' });
   res.json(session);
 });
 
 // Update session
-router.put('/:sessionId', authenticateJwt, sessionAccessControl, async (req, res) => {
-  const sessionId = Number(req.params.sessionId);
-  const { title, description, objectives, orderIndex, basePrice } = req.body;
-  try {
-    const session = await prisma.class.update({
-      where: { id: sessionId },
-      data: { title, description, objectives, orderIndex, basePrice },
-    });
-    res.json(session);
-  } catch (err) {
-    res.status(404).json({ message: 'Session not found or update failed', error: err });
+router.put(
+  '/:sessionId',
+  authenticateJwt,
+  sessionAccessControl,
+  async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    const { title, description, objectives, orderIndex, basePrice } = req.body;
+    try {
+      const session = await prisma.class.update({
+        where: { id: sessionId },
+        data: { title, description, objectives, orderIndex, basePrice },
+      });
+      res.json(session);
+    } catch (err) {
+      res
+        .status(404)
+        .json({ message: 'Session not found or update failed', error: err });
+    }
   }
-});
+);
 
 // Delete session
-router.delete('/:sessionId', authenticateJwt, sessionAccessControl, async (req, res) => {
-  const sessionId = Number(req.params.sessionId);
-  try {
-    await prisma.class.delete({ where: { id: sessionId } });
-    res.status(204).send();
-  } catch (err) {
-    res.status(404).json({ message: 'Session not found or delete failed', error: err });
+router.delete(
+  '/:sessionId',
+  authenticateJwt,
+  sessionAccessControl,
+  async (req, res) => {
+    const sessionId = Number(req.params.sessionId);
+    try {
+      await prisma.class.delete({ where: { id: sessionId } });
+      res.status(204).send();
+    } catch (err) {
+      res
+        .status(404)
+        .json({ message: 'Session not found or delete failed', error: err });
+    }
   }
-});
+);
 
 export default router;

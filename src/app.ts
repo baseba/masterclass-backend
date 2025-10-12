@@ -13,12 +13,12 @@ import slotRouter from './controllers/slots.controller';
 import sessionRouter from './routes/course/sessions';
 import reservationRouter from './controllers/reservations.controller';
 
-const allowedOrigins = ['http://localhost:4321/', 'https://tu-dominio.com/'];
+const allowedOrigins = ['http://localhost:4321'];
 
 const app = express();
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: '*',
     credentials: true,
   })
 );
