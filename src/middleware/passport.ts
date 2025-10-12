@@ -2,10 +2,8 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { User } from '../types';
-
-const prisma = new PrismaClient();
 
 passport.use(
   new LocalStrategy({ usernameField: 'email', passwordField: 'password' }, async (email: string, password: string, done: (error: any, user?: any, info?: any) => void) => {

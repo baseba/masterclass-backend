@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../prisma';
 import authenticateJwt from '../../middleware/authenticateJwt';
 
-const prisma = new PrismaClient();
 const router = Router({ mergeParams: true });
 
 // Access control middleware

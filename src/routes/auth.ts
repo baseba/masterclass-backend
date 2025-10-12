@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import passport from '../middleware/passport';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import { signJwt } from '../utils/jwt';
 import { User, AuthPayload } from '../types';
 
-const prisma = new PrismaClient();
 const router = Router();
 
 router.post('/register', async (req, res) => {

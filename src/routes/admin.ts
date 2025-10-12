@@ -1,12 +1,11 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma';
 import bcrypt from 'bcryptjs';
 import { signJwt } from '../utils/jwt';
 import { Admin } from '../types';
 
 import authenticateAdmin from '../middleware/authenticateAdmin';
 
-const prisma = new PrismaClient();
 const router = Router();
 
 // Admin login
