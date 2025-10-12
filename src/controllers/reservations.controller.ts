@@ -19,11 +19,15 @@ router.post("/", authenticateJwt, async (req, res) => {
 });
 
 // Get all reservations
-router.get("/", authenticateJwt, async (req, res) => {
-  const reservations = await prisma.reservation.findMany({
-    include: { slot: true, student: true, payment: true },
-  });
-  res.json(reservations);
+router.get("/", async (req, res) => {
+  try {
+    const reservations = await prisma.reservation.findMany({
+      include: { slot: true, student: true, payment: true },
+    });
+    res.json(reservations);
+  } catch (err) {
+    res.status(400).json({ message: "Could not retrieve reservations", error: err });
+  }
 });
 
 // Get reservation by id
