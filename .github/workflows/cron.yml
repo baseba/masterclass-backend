@@ -13,5 +13,7 @@ jobs:
       CRON_KEY: ${{ secrets.CRON_KEY }}
     steps:
       - name: Call Render Cron Endpoint
+        env:
+          CRON_KEY: ${{ secrets.CRON_KEY }}
         run: |
           curl -X GET "https://masterclass-backend-gcne.onrender.com/cron/daily-job?key=${CRON_KEY}"
