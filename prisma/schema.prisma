@@ -48,6 +48,12 @@ enum AccessPolicy {
   no_show_restricted
 }
 
+enum Role {
+  student
+  professor
+  admin
+}
+
 model Professor {
   id                 Int      @id @default(autoincrement())
   name               String
@@ -72,6 +78,9 @@ model Course {
   id          Int      @id @default(autoincrement())
   professor   Professor @relation(fields: [professorId], references: [id])
   professorId Int
+  // New temporary relation to User for migration to unified User model
+  professorUser   User?    @relation("CourseProfessorUser", fields: [professorUserId], references: [id])
+  professorUserId Int?
   title       String
   description String
   isActive    Boolean   @default(true)
@@ -97,6 +106,9 @@ model Slot {
   classId      Int
   professor    Professor     @relation(fields: [professorId], references: [id])
   professorId  Int
+  // Temporary relation to User
+  professorUser   User?   @relation("SlotProfessorUser", fields: [professorUserId], references: [id])
+  professorUserId Int?
   startTime    DateTime
   endTime      DateTime
   modality     SlotModality
@@ -113,6 +125,9 @@ model Reservation {
   id         Int              @id @default(autoincrement())
   student    Student          @relation(fields: [studentId], references: [id])
   studentId  Int
+  // Temporary relation to User
+  studentUser   User?   @relation("ReservationStudentUser", fields: [studentUserId], references: [id])
+  studentUserId Int?
   slot       Slot             @relation(fields: [slotId], references: [id])
   slotId     Int
   status     ReservationStatus @default(pending)
@@ -127,6 +142,9 @@ model Payment {
   id                  Int           @id @default(autoincrement())
   student             Student       @relation(fields: [studentId], references: [id])
   studentId           Int
+  // Temporary relation to User
+  studentUser   User?   @relation("PaymentStudentUser", fields: [studentUserId], references: [id])
+  studentUserId Int?
   amount              Float
   currency            String
   status              PaymentStatus @default(pending)
@@ -136,6 +154,24 @@ model Payment {
   reservations        Reservation[]
   @@index([studentId])
   @@index([status])
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  name              String
+  email             String   @unique
+  passwordHash      String?
+  phone             String?
+  role              Role     @default(student)
+  bio               String?
+  profilePictureUrl String?
+  createdAt         DateTime @default(now())
+
+  // Relations (match temporary relation names)
+  coursesAsProfessor Course[] @relation("CourseProfessorUser")
+  slotsAsProfessor   Slot[]   @relation("SlotProfessorUser")
+  reservations       Reservation[] @relation("ReservationStudentUser")
+  payments           Payment[]     @relation("PaymentStudentUser")
 }
 
 model Material {

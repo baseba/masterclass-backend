@@ -13,6 +13,8 @@ import slotRouter from "./controllers/slots.controller";
 import sessionRouter from "./routes/course/sessions";
 import reservationRouter from "./controllers/reservations.controller";
 import cronjobsController from "./controllers/cronjobs.controller";
+import v2UsersRouter from "./routes/v2/users";
+import v2StudentRouter from "./routes/v2/student";
 
 const allowedOrigins = ["http://localhost:4321", "https://tu-dominio.com"];
 
@@ -34,6 +36,8 @@ app.use("/courses", courseRouter);
 app.use("/slots", slotRouter);
 app.use("/reservations", reservationRouter);
 app.use("/cron", cronjobsController);
+app.use("/v2/users", v2UsersRouter);
+app.use("/v2", v2StudentRouter);
 app.use("/", helloRouter);
 
 app.get("/public", (req, res) => {

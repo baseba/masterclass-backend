@@ -1,279 +1,154 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role, SlotModality } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  // Admins
-  const admins = [
-    { name: "Demo Admin", email: "admin@demo.com", password: "admin123" },
-    { name: "Admin 2", email: "admin2@demo.com", password: "admin456" },
-  ];
-  for (const admin of admins) {
-    const existing = await prisma.admin.findUnique({
-      where: { email: admin.email },
-    });
-    if (!existing) {
-      const passwordHash = await bcrypt.hash(admin.password, 10);
-      await prisma.admin.create({
-        data: { name: admin.name, email: admin.email, passwordHash },
-      });
-      console.log("Admin user created:", {
-        email: admin.email,
-        password: admin.password,
-      });
-    }
-  }
+function randomPhone(prefix = "+1") {
+  const n = () => Math.floor(Math.random() * 9000000000) + 1000000000;
+  return `${prefix}${n()}`;
+}
 
-  // Students
-  const studentsData = [
-    {
-      name: "Demo Student",
-      email: "student@demo.com",
-      password: "student123",
-      phone: "1234567890",
-    },
-    {
-      name: "Student 2",
-      email: "student2@demo.com",
-      password: "student456",
-      phone: "2345678901",
-    },
-    {
-      name: "Student 3",
-      email: "student3@demo.com",
-      password: "student789",
-      phone: "3456789012",
-    },
-    {
-      name: "Student 4",
-      email: "student4@demo.com",
-      password: "student101",
-      phone: "4567890123",
-    },
+async function main() {
+  // We'll create unified Users and keep legacy tables populated for compatibility.
+
+  // Admins / Users with role=admin
+  const admins = [
+    { name: "Ariadne Cortez", email: "admin@masterclass.dev", password: "AdminPass123!" },
+    { name: "Marco Silva", email: "admin2@masterclass.dev", password: "AdminPass456!" },
   ];
-  const students: Array<{
-    id: number;
-    email: string;
-    name: string;
-    passwordHash: string;
-    phone: string | null;
-  }> = [];
-  for (const student of studentsData) {
-    let existing = await prisma.student.findUnique({
-      where: { email: student.email },
-    });
-    if (!existing) {
-      const passwordHash = await bcrypt.hash(student.password, 10);
-      existing = await prisma.student.create({
-        data: {
-          name: student.name,
-          email: student.email,
-          passwordHash,
-          phone: student.phone,
-        },
-      });
-      console.log("Student user created:", {
-        email: student.email,
-        password: student.password,
-      });
+
+  for (const a of admins) {
+    const existingUser = await prisma.user.findUnique({ where: { email: a.email } });
+    if (!existingUser) {
+      const passwordHash = await bcrypt.hash(a.password, 10);
+      await prisma.user.create({ data: { name: a.name, email: a.email, passwordHash, role: Role.admin } });
+      console.log(`Created admin user: ${a.email}`);
     }
-    students.push(existing);
+    // keep legacy Admin row for now
+    const existingAdmin = await prisma.admin.findUnique({ where: { email: a.email } });
+    if (!existingAdmin) {
+      const passwordHash = await bcrypt.hash(a.password, 10);
+      await prisma.admin.create({ data: { name: a.name, email: a.email, passwordHash } });
+    }
   }
 
   // Professors
   const professorsData = [
-    {
-      name: "Demo Professor",
-      email: "professor@demo.com",
-      bio: "Demo professor bio",
-      profilePictureUrl: "",
-    },
-    {
-      name: "Professor 2",
-      email: "prof2@demo.com",
-      bio: "Bio 2",
-      profilePictureUrl: "",
-    },
-    {
-      name: "Professor 3",
-      email: "prof3@demo.com",
-      bio: "Bio 3",
-      profilePictureUrl: "",
-    },
-    {
-      name: "Professor 4",
-      email: "prof4@demo.com",
-      bio: "Bio 4",
-      profilePictureUrl: "",
-    },
+    { name: "Elena Rodriguez", email: "elena@masterclass.dev", bio: "Piano & composition instructor with 12 years experience.", profilePictureUrl: "" },
+    { name: "Dr. Kenji Watanabe", email: "kenji@masterclass.dev", bio: "Music theory and arranging.", profilePictureUrl: "" },
+    { name: "Amara N'diaye", email: "amara@masterclass.dev", bio: "Vocal technique and performance coach.", profilePictureUrl: "" },
   ];
-  const professors: Array<{
-    id: number;
-    email: string;
-    name: string;
-    bio: string | null;
-    profilePictureUrl: string | null;
-  }> = [];
+
+  const professors: Array<any> = [];
   for (const prof of professorsData) {
-    let existing = await prisma.professor.findUnique({
-      where: { email: prof.email },
-    });
-    if (!existing) {
-      existing = await prisma.professor.create({ data: prof });
-      console.log("Professor user created:", { email: prof.email });
+    // create or reuse unified User
+    let user = await prisma.user.findUnique({ where: { email: prof.email } });
+    if (!user) {
+      user = await prisma.user.create({ data: { name: prof.name, email: prof.email, role: Role.professor, bio: prof.bio, profilePictureUrl: prof.profilePictureUrl } });
+      console.log(`Created user (professor): ${prof.email}`);
     }
-    professors.push(existing);
+    // legacy Professor row
+    let legacy = await prisma.professor.findUnique({ where: { email: prof.email } });
+    if (!legacy) {
+      legacy = await prisma.professor.create({ data: { name: prof.name, email: prof.email, bio: prof.bio, profilePictureUrl: prof.profilePictureUrl } });
+      console.log(`Created legacy Professor: ${prof.email}`);
+    }
+    professors.push({ user, legacy });
   }
 
-  // Courses
-  const coursesData = [
-    {
-      title: "Course 1",
-      description: "Description 1",
-      professorId: professors[0].id,
-    },
-    {
-      title: "Course 2",
-      description: "Description 2",
-      professorId: professors[1].id,
-    },
-    {
-      title: "Course 3",
-      description: "Description 3",
-      professorId: professors[2].id,
-    },
-    {
-      title: "Course 4",
-      description: "Description 4",
-      professorId: professors[3].id,
-    },
+  // Students
+  const studentsData = [
+    { name: "Liam Murphy", email: "liam@student.dev", password: "Student1!", phone: randomPhone() },
+    { name: "Sofia Patel", email: "sofia@student.dev", password: "Student2!", phone: randomPhone() },
+    { name: "Noah Kim", email: "noah@student.dev", password: "Student3!", phone: randomPhone() },
   ];
-  const courses: Array<{
-    id: number;
-    professorId: number;
-    title: string;
-    description: string;
-    isActive: boolean;
-  }> = [];
-  for (const course of coursesData) {
-    let existing = await prisma.course.findFirst({
-      where: { title: course.title, professorId: course.professorId },
-    });
+
+  const students: Array<any> = [];
+  for (const s of studentsData) {
+    let user = await prisma.user.findUnique({ where: { email: s.email } });
+    if (!user) {
+      const passwordHash = await bcrypt.hash(s.password, 10);
+      user = await prisma.user.create({ data: { name: s.name, email: s.email, passwordHash, role: Role.student, phone: s.phone } });
+      console.log(`Created user (student): ${s.email}`);
+    }
+    let legacy = await prisma.student.findUnique({ where: { email: s.email } });
+    if (!legacy) {
+      const passwordHash = await bcrypt.hash(s.password, 10);
+      legacy = await prisma.student.create({ data: { name: s.name, email: s.email, passwordHash, phone: s.phone } });
+      console.log(`Created legacy Student: ${s.email}`);
+    }
+    students.push({ user, legacy });
+  }
+
+  // Courses (associate both legacy professorId and professorUserId temporary FK)
+  const coursesData = [
+    { title: "Foundations of Piano", description: "Beginner to intermediate piano techniques.", professorIndex: 0 },
+    { title: "Advanced Music Theory", description: "Harmonic analysis and arranging.", professorIndex: 1 },
+    { title: "Vocal Performance Lab", description: "Stage presence, breath control, and repertoire.", professorIndex: 2 },
+  ];
+
+  const courses: Array<any> = [];
+  for (const c of coursesData) {
+    const prof = professors[c.professorIndex];
+    let existing = await prisma.course.findFirst({ where: { title: c.title, professorId: prof.legacy.id } });
     if (!existing) {
-      existing = await prisma.course.create({ data: course });
-      console.log("Course created:", { title: course.title });
+      existing = await prisma.course.create({ data: { title: c.title, description: c.description, professorId: prof.legacy.id, professorUserId: prof.user.id } });
+      console.log(`Created course: ${c.title}`);
     }
     courses.push(existing);
   }
 
-  // Classes
-  const classes: Array<{
-    id: number;
-    title: string;
-    description: string;
-    courseId: number;
-    objectives: string | null;
-    orderIndex: number;
-    basePrice: number;
-  }> = [];
+  // Classes for each course
+  const classes: Array<any> = [];
   for (const [i, course] of courses.entries()) {
-    for (let j = 1; j <= 2; j++) {
-      for (const suffix of ["a", "b"]) {
-        const title = `Class ${i + 1}-${suffix}`;
-        let existing = await prisma.class.findFirst({
-          where: { title, courseId: course.id },
-        });
-        if (!existing) {
-          existing = await prisma.class.create({
-            data: {
-              title,
-              description: `Description for ${title}`,
-              objectives: `Objectives for ${title}`,
-              orderIndex: j,
-              basePrice: 100 + i * 10 + j,
-              courseId: course.id,
-            },
-          });
-          console.log("Class created:", { title });
-        }
-        classes.push(existing);
+    for (let j = 1; j <= 3; j++) {
+      const title = `${course.title} — Session ${j}`;
+      let existing = await prisma.class.findFirst({ where: { title, courseId: course.id } });
+      if (!existing) {
+        existing = await prisma.class.create({ data: { title, description: `In-depth session ${j} for ${course.title}`, objectives: `Objectives for ${title}`, orderIndex: j, basePrice: 49.99 + i * 10 + j, courseId: course.id } });
+        console.log(`Created class: ${title}`);
       }
+      classes.push(existing);
     }
   }
 
-  // Slots
-  const slots: Array<{
-    id: number;
-    professorId: number;
-    classId: number;
-    startTime: Date;
-    endTime: Date;
-    modality: string;
-    status: string;
-    minStudents: number | null;
-    maxStudents: number;
-  }> = [];
+  // Slots: create a couple of slots per class with varied times and modalities
+  const slots: Array<any> = [];
   for (const [i, classObj] of classes.entries()) {
+    const profForCourse = await prisma.course.findUnique({ where: { id: classObj.courseId } });
+    const professorUserId = profForCourse?.professorUserId ?? null;
     for (let k = 0; k < 2; k++) {
-      // Generate random start time between 9:00 and 21:00 today
-      const today = new Date();
-      today.setHours(9, 0, 0, 0); // Set to 9:00
-      const minHour = 9;
-      const maxHour = 21; // Last slot starts at 21:00, ends at 22:00
-      const randomHour =
-        Math.floor(Math.random() * (maxHour - minHour + 1)) + minHour;
-      const randomMinute = Math.floor(Math.random() * 60);
-      const startTime = new Date(today);
-      startTime.setHours(randomHour, randomMinute, 0, 0);
-      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-      const modality = k % 2 === 0 ? "group" : "private";
+      const start = new Date();
+      start.setDate(start.getDate() + i + k);
+      start.setHours(9 + k * 3, 30, 0, 0);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const modality = k % 2 === 0 ? SlotModality.group : SlotModality.private;
       const status = "candidate";
-      const minStudents = 1;
-      const maxStudents = 10;
-      let existing = await prisma.slot.findFirst({
-        where: { classId: classObj.id, startTime },
-      });
+      const minStudents = modality === SlotModality.group ? 2 : 1;
+      const maxStudents = modality === SlotModality.group ? 12 : 1;
+
+      let existing = await prisma.slot.findFirst({ where: { classId: classObj.id, startTime: start } });
       if (!existing) {
-        existing = await prisma.slot.create({
-          data: {
-            classId: classObj.id,
-            professorId: courses[Math.floor(i / 4)].professorId,
-            startTime,
-            endTime,
-            modality,
-            status,
-            minStudents,
-            maxStudents,
-          },
-        });
-        console.log("Slot created:", { classId: classObj.id, startTime });
+        existing = await prisma.slot.create({ data: { classId: classObj.id, professorId: (profForCourse?.professorId as number) || 0, professorUserId, startTime: start, endTime: end, modality, status, minStudents, maxStudents } });
+        console.log(`Created slot for class ${classObj.id} at ${start.toISOString()}`);
       }
       slots.push(existing);
     }
   }
 
-  // Reservations
-  for (const slot of slots) {
-    for (const student of students) {
-      let existing = await prisma.reservation.findFirst({
-        where: { slotId: slot.id, studentId: student.id },
-      });
+  // Reservations: make each student reserve the first slot of the first class
+  if (slots.length > 0) {
+    const firstSlot = slots[0];
+    for (const s of students) {
+      let existing = await prisma.reservation.findFirst({ where: { slotId: firstSlot.id, studentId: s.legacy.id } });
       if (!existing) {
-        existing = await prisma.reservation.create({
-          data: {
-            slotId: slot.id,
-            studentId: student.id,
-            status: "pending",
-          },
-        });
-        console.log("Reservation created:", {
-          slotId: slot.id,
-          studentId: student.id,
-        });
+        existing = await prisma.reservation.create({ data: { slotId: firstSlot.id, studentId: s.legacy.id, studentUserId: s.user.id, status: "pending" } });
+        console.log(`Created reservation for student ${s.legacy.email} on slot ${firstSlot.id}`);
       }
     }
   }
+
+  console.log("Seeding complete.");
 }
 
 main()

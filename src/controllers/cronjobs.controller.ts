@@ -10,6 +10,9 @@ router.post("/daily-job", async (req, res) => {
     return res.status(403).send("Forbidden");
   }
   // logica del cron job
+  // check slots for the next day and send reminders
+  // cancel slots with less than 2 students
+
   res.send("Job ran!");
 });
 
