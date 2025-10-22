@@ -19,7 +19,7 @@ const allowedOrigins = ['http://localhost:4321', 'https://tu-dominio.com'];
 const app = express();
 app.use(
   cors({
-    origin: '*',
+    origin: allowedOrigins,
     credentials: true,
   })
 );

@@ -9,12 +9,17 @@ const router = Router();
 
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, rut } = req.body;
+    const { email, password, rut, name } = req.body as {
+      email: string;
+      password: string;
+      rut: string;
+      name: string;
+    };
 
-    if (!email || !password || !rut)
+    if (!email || !password || !rut || !name)
       return res
         .status(400)
-        .json({ message: 'Email, password and RUT required' });
+        .json({ message: 'Email, password, RUT and name required' });
 
     const existing = await prisma.student.findUnique({ where: { email } });
     if (existing)
@@ -22,7 +27,7 @@ router.post('/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const student = await prisma.student.create({
-      data: { email, passwordHash: hash, name: email, rut: rut },
+      data: { email, passwordHash: hash, name: name, rut: rut },
     });
     const { passwordHash: _, ...studentInfo } = student;
     res.status(201).json(studentInfo);
