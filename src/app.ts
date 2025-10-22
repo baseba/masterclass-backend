@@ -15,6 +15,7 @@ import reservationRouter from "./controllers/reservations.controller";
 import cronjobsController from "./controllers/cronjobs.controller";
 import v2UsersRouter from "./routes/v2/users";
 import v2StudentRouter from "./routes/v2/student";
+import v2ProfessorRouter from "./routes/v2/professors";
 
 const allowedOrigins = ["http://localhost:4321", "https://tu-dominio.com"];
 
@@ -38,6 +39,7 @@ app.use("/reservations", reservationRouter);
 app.use("/cron", cronjobsController);
 app.use("/v2/users", v2UsersRouter);
 app.use("/v2", v2StudentRouter);
+app.use("/v2/professors", v2ProfessorRouter);
 app.use("/", helloRouter);
 
 app.get("/public", (req, res) => {

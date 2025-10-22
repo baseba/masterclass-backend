@@ -1,8 +1,10 @@
 export interface User {
   id: number;
+  name?: string;
   email: string;
-  password: string;
-  createdAt: Date;
+  passwordHash?: string;
+  role?: 'student' | 'professor' | 'admin';
+  createdAt?: Date;
 }
 
 export interface Admin {
@@ -16,5 +18,5 @@ export interface Admin {
 export interface AuthPayload {
   id: number;
   email: string;
-  role: 'user' | 'admin';
+  role: 'student' | 'professor' | 'admin';
 }

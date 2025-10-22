@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+// Standard password for seeded professor accounts (override with env var in CI/dev if needed)
+const STANDARD_PROFESSOR_PASSWORD = process.env.PROFESSOR_SEED_PASSWORD || 'Professor1!';
+
 function randomPhone(prefix = "+1") {
   const n = () => Math.floor(Math.random() * 9000000000) + 1000000000;
   return `${prefix}${n()}`;
@@ -34,26 +37,48 @@ async function main() {
 
   // Professors
   const professorsData = [
-    { name: "Elena Rodriguez", email: "elena@masterclass.dev", bio: "Piano & composition instructor with 12 years experience.", profilePictureUrl: "" },
-    { name: "Dr. Kenji Watanabe", email: "kenji@masterclass.dev", bio: "Music theory and arranging.", profilePictureUrl: "" },
-    { name: "Amara N'diaye", email: "amara@masterclass.dev", bio: "Vocal technique and performance coach.", profilePictureUrl: "" },
+    { name: "Elena Rodriguez", email: "elena@masterclass.dev", password: "Professor1!", phone: randomPhone() },
+    { name: "Dr. Kenji Watanabe", email: "kenji@masterclass.dev", password: "Professor1!", phone: randomPhone() },
+    { name: "Amara N'diaye", email: "amara@masterclass.dev", password: "Professor1!", phone: randomPhone() },
   ];
 
   const professors: Array<any> = [];
   for (const prof of professorsData) {
     // create or reuse unified User
     let user = await prisma.user.findUnique({ where: { email: prof.email } });
+    // follow students pattern: use prof.password from the data object
+    const passwordToUse = prof.password;
     if (!user) {
-      user = await prisma.user.create({ data: { name: prof.name, email: prof.email, role: Role.professor, bio: prof.bio, profilePictureUrl: prof.profilePictureUrl } });
+      const passwordHash = await bcrypt.hash(passwordToUse, 10);
+      user = await prisma.user.create({ data: { name: prof.name, email: prof.email, role: Role.professor, passwordHash, phone: prof.phone } });
       console.log(`Created user (professor): ${prof.email}`);
+    } else if (!user.passwordHash) {
+      const passwordHash = await bcrypt.hash(passwordToUse, 10);
+      user = await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+      console.log(`Backfilled password for existing user (professor): ${prof.email}`);
     }
     // legacy Professor row
     let legacy = await prisma.professor.findUnique({ where: { email: prof.email } });
     if (!legacy) {
-      legacy = await prisma.professor.create({ data: { name: prof.name, email: prof.email, bio: prof.bio, profilePictureUrl: prof.profilePictureUrl } });
+      legacy = await prisma.professor.create({ data: { name: prof.name, email: prof.email } });
       console.log(`Created legacy Professor: ${prof.email}`);
     }
     professors.push({ user, legacy });
+  }
+
+  // write professor password mapping for dev usage
+  try {
+    const mapping: Record<string, string> = {};
+    for (const [i, prof] of professorsData.entries()) {
+      const email = prof.email;
+      mapping[email] = prof.password;
+    }
+    const fs = require('fs');
+    fs.mkdirSync('./tmp', { recursive: true });
+    fs.writeFileSync('./tmp/professor-passwords.json', JSON.stringify(mapping, null, 2));
+    console.log('Wrote ./tmp/professor-passwords.json (contains notes on passwords)');
+  } catch (e) {
+    console.warn('Could not write professor password mapping:', e);
   }
 
   // Students
