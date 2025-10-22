@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
     }
     const course = await prisma.course.findUnique({
       where: { id: Number(req.params.id) },
-      include: { professor: true, classes: true },
+      include: { professors: true, classes: true },
     });
     if (!course) return res.status(404).json({ message: 'Course not found' });
     res.json(course);
