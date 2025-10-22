@@ -48,9 +48,40 @@ router.put('/:id', authenticateJwt, async (req, res) => {
       data: { slotId, studentId, status, paymentId },
     });
     res.json(reservation);
+
+    // check  the quantity of reservations for the slot
+    const slotReservations = await prisma.reservation.count({
+      where: { slotId: reservation.slotId, status: 'confirmed' },
+    });
+    const slot = await prisma.slot.findUnique({
+      where: { id: reservation.slotId },
+    });
+    if (slotReservations > (slot?.maxStudents || 0)) {
+      // If over capacity, revert the status change and notify
+      await prisma.reservation.update({
+        where: { id },
+        data: { status: 'pending' },
+      });
+    }
+    // if more than minimum and less than maximum, promote slot to confirmed
+    if (
+      slotReservations >= (slot?.minStudents || 0) &&
+      slotReservations <= (slot?.maxStudents || 0)
+    ) {
+      await prisma.reservation.update({
+        where: { id },
+        data: { status: 'confirmed' },
+      });
+    }
+    // if less than minimum, keep as pending
+    return res.status(400).json({
+      message: 'Reservation exceeds slot capacity. Status reverted to pending.',
+    });
   } catch (err) {
     res
+
       .status(400)
+
       .json({ message: 'Could not update reservation', error: err });
   }
 });
