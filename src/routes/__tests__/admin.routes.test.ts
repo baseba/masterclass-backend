@@ -47,7 +47,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.admin.deleteMany({ where: { email: 'admin2@example.com' } });
-  await prisma.professor.deleteMany({ where: { email: 'student2@example.com' } });
+  await prisma.professor.deleteMany({
+    where: { email: 'student2@example.com' },
+  });
   await prisma.student.deleteMany({ where: { email: 'student2@example.com' } });
   await prisma.$disconnect();
 });
@@ -73,7 +75,7 @@ describe('Admin Routes', () => {
     const res = await request(app)
       .get('/professor/999999')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect([200,404]).toContain(res.status);
+    expect([200, 404]).toContain(res.status);
   });
 
   it('should promote student to professor', async () => {

@@ -47,8 +47,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.admin.deleteMany({ where: { email: 'admin-course@example.com' } });
-  await prisma.professor.deleteMany({ where: { email: 'prof-course@example.com' } });
+  await prisma.admin.deleteMany({
+    where: { email: 'admin-course@example.com' },
+  });
+  await prisma.professor.deleteMany({
+    where: { email: 'prof-course@example.com' },
+  });
   await prisma.course.deleteMany({ where: { title: 'Test Course' } });
   await prisma.$disconnect();
 });
@@ -58,7 +62,11 @@ describe('Course Routes', () => {
     const res = await request(app)
       .post('/course')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Test Course', description: 'A test course', professorId });
+      .send({
+        title: 'Test Course',
+        description: 'A test course',
+        professorId,
+      });
     expect(res.status).toBe(201);
     expect(res.body.title).toBe('Test Course');
     courseId = res.body.id;
@@ -93,6 +101,6 @@ describe('Course Routes', () => {
     const res = await request(app)
       .delete(`/course/${courseId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    expect([200,204,404]).toContain(res.status);
+    expect([200, 204, 404]).toContain(res.status);
   });
 });

@@ -61,8 +61,12 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.class.deleteMany({ where: { title: 'Test Session' } });
   await prisma.course.deleteMany({ where: { title: 'Session Course' } });
-  await prisma.professor.deleteMany({ where: { email: 'prof-session@example.com' } });
-  await prisma.admin.deleteMany({ where: { email: 'admin-session@example.com' } });
+  await prisma.professor.deleteMany({
+    where: { email: 'prof-session@example.com' },
+  });
+  await prisma.admin.deleteMany({
+    where: { email: 'admin-session@example.com' },
+  });
   await prisma.$disconnect();
 }, 20000);
 
@@ -71,7 +75,13 @@ describe('Session (Class) Routes', () => {
     const res = await request(app)
       .post(`/course/${courseId}/sessions`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Test Session', description: 'Session desc', objectives: 'Learn', orderIndex: 1, basePrice: 100 });
+      .send({
+        title: 'Test Session',
+        description: 'Session desc',
+        objectives: 'Learn',
+        orderIndex: 1,
+        basePrice: 100,
+      });
     expect(res.status).toBe(201);
     expect(res.body.title).toBe('Test Session');
     sessionId = res.body.id;
@@ -97,7 +107,13 @@ describe('Session (Class) Routes', () => {
     const res = await request(app)
       .put(`/course/${courseId}/sessions/${sessionId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Updated Session', description: 'Updated', objectives: 'Updated', orderIndex: 2, basePrice: 150 });
+      .send({
+        title: 'Updated Session',
+        description: 'Updated',
+        objectives: 'Updated',
+        orderIndex: 2,
+        basePrice: 150,
+      });
     expect(res.status).toBe(200);
     expect(res.body.title).toBe('Updated Session');
   });
@@ -106,6 +122,6 @@ describe('Session (Class) Routes', () => {
     const res = await request(app)
       .delete(`/course/${courseId}/sessions/${sessionId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    expect([200,204,404]).toContain(res.status);
+    expect([200, 204, 404]).toContain(res.status);
   });
 });

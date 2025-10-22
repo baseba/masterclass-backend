@@ -1,12 +1,10 @@
-import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
-import authenticateJwt from "../middleware/authenticateJwt";
-
-const prisma = new PrismaClient();
+import { Router } from 'express';
+import authenticateJwt from '../middleware/authenticateJwt';
+import prisma from '../prisma';
 const router = Router();
 
 // Create reservation
-router.post("/", authenticateJwt, async (req, res) => {
+router.post('/', authenticateJwt, async (req, res) => {
   const { slotId, studentId, status, paymentId } = req.body;
   try {
     const reservation = await prisma.reservation.create({
@@ -16,38 +14,32 @@ router.post("/", authenticateJwt, async (req, res) => {
   } catch (err) {
     res
       .status(400)
-      .json({ message: "Could not create reservation", error: err });
+      .json({ message: 'Could not create reservation', error: err });
   }
 });
 
 // Get all reservations
-router.get("/", async (req, res) => {
-  try {
-    const reservations = await prisma.reservation.findMany({
-      include: { slot: true, student: true, payment: true },
-    });
-    res.json(reservations);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Could not retrieve reservations", error: err });
-  }
+router.get('/', authenticateJwt, async (req, res) => {
+  const reservations = await prisma.reservation.findMany({
+    include: { slot: true, student: true, payment: true },
+  });
+  res.json(reservations);
 });
 
 // Get reservation by id
-router.get("/:id", authenticateJwt, async (req, res) => {
+router.get('/:id', authenticateJwt, async (req, res) => {
   const id = Number(req.params.id);
   const reservation = await prisma.reservation.findUnique({
     where: { id },
     include: { slot: true, student: true, payment: true },
   });
   if (!reservation)
-    return res.status(404).json({ message: "Reservation not found" });
+    return res.status(404).json({ message: 'Reservation not found' });
   res.json(reservation);
 });
 
 // Update reservation
-router.put("/:id", authenticateJwt, async (req, res) => {
+router.put('/:id', authenticateJwt, async (req, res) => {
   const id = Number(req.params.id);
   const { slotId, studentId, status, paymentId } = req.body;
   try {
@@ -59,7 +51,7 @@ router.put("/:id", authenticateJwt, async (req, res) => {
 
     // check  the quantity of reservations for the slot
     const slotReservations = await prisma.reservation.count({
-      where: { slotId: reservation.slotId, status: "confirmed" },
+      where: { slotId: reservation.slotId, status: 'confirmed' },
     });
     const slot = await prisma.slot.findUnique({
       where: { id: reservation.slotId },
@@ -68,7 +60,7 @@ router.put("/:id", authenticateJwt, async (req, res) => {
       // If over capacity, revert the status change and notify
       await prisma.reservation.update({
         where: { id },
-        data: { status: "pending" },
+        data: { status: 'pending' },
       });
     }
     // if more than minimum and less than maximum, promote slot to confirmed
@@ -78,22 +70,24 @@ router.put("/:id", authenticateJwt, async (req, res) => {
     ) {
       await prisma.reservation.update({
         where: { id },
-        data: { status: "confirmed" },
+        data: { status: 'confirmed' },
       });
     }
     // if less than minimum, keep as pending
     return res.status(400).json({
-      message: "Reservation exceeds slot capacity. Status reverted to pending.",
+      message: 'Reservation exceeds slot capacity. Status reverted to pending.',
     });
   } catch (err) {
     res
+
       .status(400)
-      .json({ message: "Could not update reservation", error: err });
+
+      .json({ message: 'Could not update reservation', error: err });
   }
 });
 
 // Delete reservation
-router.delete("/:id", authenticateJwt, async (req, res) => {
+router.delete('/:id', authenticateJwt, async (req, res) => {
   const id = Number(req.params.id);
   try {
     await prisma.reservation.delete({ where: { id } });
@@ -101,7 +95,7 @@ router.delete("/:id", authenticateJwt, async (req, res) => {
   } catch (err) {
     res
       .status(400)
-      .json({ message: "Could not delete reservation", error: err });
+      .json({ message: 'Could not delete reservation', error: err });
   }
 });
 

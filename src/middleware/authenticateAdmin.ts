@@ -4,12 +4,17 @@ import { AuthPayload } from '../types';
 
 const authenticateAdmin = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: 'No token provided' });
+  if (!authHeader)
+    return res.status(401).json({ message: 'No token provided' });
 
   const token = authHeader.split(' ')[1];
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_here') as AuthPayload;
-    if (payload.role !== 'admin') return res.status(403).json({ message: 'Forbidden: Admins only' });
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'your_jwt_secret_here'
+    ) as AuthPayload;
+    if (payload.role !== 'admin')
+      return res.status(403).json({ message: 'Forbidden: Admins only' });
     req.user = payload;
     next();
   } catch {
