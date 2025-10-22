@@ -12,8 +12,11 @@ router.get('/', authenticateAdmin, async (req, res) => {
 
 // Get professor by ID
 router.get('/:id', authenticateAdmin, async (req, res) => {
-  const professor = await prisma.professor.findUnique({ where: { id: Number(req.params.id) } });
-  if (!professor) return res.status(404).json({ message: 'Professor not found' });
+  const professor = await prisma.professor.findUnique({
+    where: { id: Number(req.params.id) },
+  });
+  if (!professor)
+    return res.status(404).json({ message: 'Professor not found' });
   res.json(professor);
 });
 
@@ -24,8 +27,11 @@ router.post('/promote/:studentId', authenticateAdmin, async (req, res) => {
   if (!student) return res.status(404).json({ message: 'Student not found' });
 
   // Check if already a professor
-  const existingProfessor = await prisma.professor.findUnique({ where: { email: student.email } });
-  if (existingProfessor) return res.status(409).json({ message: 'Student is already a professor' });
+  const existingProfessor = await prisma.professor.findUnique({
+    where: { email: student.email },
+  });
+  if (existingProfessor)
+    return res.status(409).json({ message: 'Student is already a professor' });
 
   // Create professor from student
   const professor = await prisma.professor.create({

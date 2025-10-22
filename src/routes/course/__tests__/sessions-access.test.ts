@@ -23,17 +23,29 @@ let sessionId: number;
 
 beforeAll(async () => {
   // Cleanup professors before creating
-  await prisma.professor.deleteMany({ where: { email: { in: ['prof-access@example.com', 'prof-other@example.com'] } } });
+  await prisma.professor.deleteMany({
+    where: {
+      email: { in: ['prof-access@example.com', 'prof-other@example.com'] },
+    },
+  });
   // Cleanup admin and course before creating
   // Delete all classes for the test course before deleting the course
-  const testCourse = await prisma.course.findFirst({ where: { title: 'Access Course' } });
+  const testCourse = await prisma.course.findFirst({
+    where: { title: 'Access Course' },
+  });
   if (testCourse) {
     await prisma.class.deleteMany({ where: { courseId: testCourse.id } });
     await prisma.course.deleteMany({ where: { id: testCourse.id } });
   }
-  await prisma.admin.deleteMany({ where: { email: 'admin-access@example.com' } });
+  await prisma.admin.deleteMany({
+    where: { email: 'admin-access@example.com' },
+  });
   // Cleanup students before creating
-  await prisma.student.deleteMany({ where: { email: { in: ['prof-access@example.com', 'prof-other@example.com'] } } });
+  await prisma.student.deleteMany({
+    where: {
+      email: { in: ['prof-access@example.com', 'prof-other@example.com'] },
+    },
+  });
   // Create admin
   const adminEmail = 'admin-access@example.com';
   const adminPassword = 'adminaccess123';
@@ -48,7 +60,6 @@ beforeAll(async () => {
     .post('/admin/login')
     .send({ email: adminEmail, password: adminPassword });
   adminToken = adminRes.body.token;
-
 
   // Register and login assigned professor as student
   const professorEmail = 'prof-access@example.com';
@@ -76,7 +87,6 @@ beforeAll(async () => {
     },
   });
   professorId = professor.id;
-
 
   // Register and login other professor as student
   const otherProfessorEmail = 'prof-other@example.com';
@@ -132,14 +142,26 @@ beforeAll(async () => {
 
 afterAll(async () => {
   // Delete classes first to avoid FK constraint errors
-  const testCourse = await prisma.course.findFirst({ where: { title: 'Access Course' } });
+  const testCourse = await prisma.course.findFirst({
+    where: { title: 'Access Course' },
+  });
   if (testCourse) {
     await prisma.class.deleteMany({ where: { courseId: testCourse.id } });
     await prisma.course.deleteMany({ where: { id: testCourse.id } });
   }
-  await prisma.professor.deleteMany({ where: { email: { in: ['prof-access@example.com', 'prof-other@example.com'] } } });
-  await prisma.admin.deleteMany({ where: { email: 'admin-access@example.com' } });
-  await prisma.student.deleteMany({ where: { email: { in: ['prof-access@example.com', 'prof-other@example.com'] } } });
+  await prisma.professor.deleteMany({
+    where: {
+      email: { in: ['prof-access@example.com', 'prof-other@example.com'] },
+    },
+  });
+  await prisma.admin.deleteMany({
+    where: { email: 'admin-access@example.com' },
+  });
+  await prisma.student.deleteMany({
+    where: {
+      email: { in: ['prof-access@example.com', 'prof-other@example.com'] },
+    },
+  });
   await prisma.$disconnect();
 }, 20000);
 
@@ -148,7 +170,13 @@ describe('Session Access Control', () => {
     const res = await request(app)
       .put(`/course/${courseId}/sessions/${sessionId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Admin Updated', description: 'Updated', objectives: 'Updated', orderIndex: 2, basePrice: 150 });
+      .send({
+        title: 'Admin Updated',
+        description: 'Updated',
+        objectives: 'Updated',
+        orderIndex: 2,
+        basePrice: 150,
+      });
     expect([200, 403]).toContain(res.status); // 200 if allowed, 403 if not implemented yet
   });
 
@@ -156,15 +184,27 @@ describe('Session Access Control', () => {
     const res = await request(app)
       .put(`/course/${courseId}/sessions/${sessionId}`)
       .set('Authorization', `Bearer ${professorToken}`)
-      .send({ title: 'Prof Updated', description: 'Updated', objectives: 'Updated', orderIndex: 2, basePrice: 150 });
-  expect([200, 403, 401]).toContain(res.status);
+      .send({
+        title: 'Prof Updated',
+        description: 'Updated',
+        objectives: 'Updated',
+        orderIndex: 2,
+        basePrice: 150,
+      });
+    expect([200, 403, 401]).toContain(res.status);
   });
 
   it('other professor cannot update session', async () => {
     const res = await request(app)
       .put(`/course/${courseId}/sessions/${sessionId}`)
       .set('Authorization', `Bearer ${otherProfessorToken}`)
-      .send({ title: 'Other Updated', description: 'Updated', objectives: 'Updated', orderIndex: 2, basePrice: 150 });
-  expect([401, 403]).toContain(res.status);
+      .send({
+        title: 'Other Updated',
+        description: 'Updated',
+        objectives: 'Updated',
+        orderIndex: 2,
+        basePrice: 150,
+      });
+    expect([401, 403]).toContain(res.status);
   });
 });
