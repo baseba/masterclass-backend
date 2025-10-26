@@ -14,7 +14,7 @@ import sessionRouter from './routes/course/sessions';
 import reservationRouter from './controllers/reservations.controller';
 import cronjobsController from './controllers/cronjobs.controller';
 
-const allowedOrigins = ['http://localhost:4321', 'https://tu-dominio.com'];
+const allowedOrigins = ['http://localhost:4321', 'https://tu-dominio.com', 'https://masterclass-frontend.vercel.app', 'https://salvaramos.cl'];
 
 const app = express();
 app.use(
