@@ -120,7 +120,8 @@ beforeAll(async () => {
     data: {
       title: 'Access Course',
       description: 'Course for access test',
-      professorId,
+      // Course now has a many-to-many relation `professors` — connect the created professor
+      professors: { connect: { id: professorId } },
       isActive: true,
     },
   });

@@ -51,7 +51,8 @@ beforeAll(async () => {
     data: {
       title: 'Session Course',
       description: 'Course for sessions',
-      professorId,
+      // Connect the professor via the many-to-many relation
+      professors: { connect: { id: professorId } },
       isActive: true,
     },
   });

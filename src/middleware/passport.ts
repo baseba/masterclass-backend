@@ -16,6 +16,12 @@ passport.use(
       try {
         const student = await prisma.student.findUnique({ where: { email } });
         if (!student) return done(null, false, { message: 'Incorrect email.' });
+        // Ensure passwordHash is present (Prisma schema defines it as required,
+        // but the generated types may still allow null in certain setups). Do
+        // a runtime check to satisfy TypeScript and avoid passing null to
+        // bcrypt.compare which expects a string.
+        if (student.passwordHash == null)
+          return done(null, false, { message: 'No password set for user.' });
         const valid = await bcrypt.compare(password, student.passwordHash);
         if (!valid)
           return done(null, false, { message: 'Incorrect password.' });
