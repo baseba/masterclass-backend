@@ -5,7 +5,12 @@ const router = Router();
 
 // Create reservation
 router.post('/', authenticateJwt, async (req, res) => {
-  const { slotId, studentId, status, paymentId } = req.body;
+  const studentId = (req.user as any)?.id;
+  if (!studentId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
+  const { slotId, status, paymentId } = req.body;
   try {
     const reservation = await prisma.reservation.create({
       data: { slotId, studentId, status, paymentId },
