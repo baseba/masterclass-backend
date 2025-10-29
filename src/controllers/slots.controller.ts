@@ -68,23 +68,33 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// UPDATE
-router.put('/:id', async (req, res) => {
+// UPDATE (partial)
+router.patch('/:id', async (req, res) => {
   try {
-    const data = {
-      ...req.body,
-      startTime: parseDate(req.body.startTime, 'startTime'),
-      endTime: parseDate(req.body.endTime, 'endTime'),
-      modality: mapEnum(SlotModality, req.body.modality),
-      studentsGroup: mapEnum(SlotStudentsGroup, req.body.studentsGroup),
-      status: mapEnum(SlotStatus, req.body.status),
-    };
+    const data: any = {};
+
+    if ('startTime' in req.body)
+      data.startTime = parseDate(req.body.startTime, 'startTime');
+    if ('endTime' in req.body)
+      data.endTime = parseDate(req.body.endTime, 'endTime');
+    if ('modality' in req.body)
+      data.modality = mapEnum(SlotModality, req.body.modality);
+    if ('studentsGroup' in req.body)
+      data.studentsGroup = mapEnum(SlotStudentsGroup, req.body.studentsGroup);
+    if ('status' in req.body)
+      data.status = mapEnum(SlotStatus, req.body.status);
+
+    if (Object.keys(data).length === 0)
+      return res.status(400).json({ error: 'No fields to update' });
+
     const slot = await prismaSlot.update({
       where: { id: Number(req.params.id) },
       data,
     });
     res.json(slot);
   } catch (error: any) {
+    if (error?.code === 'P2025')
+      return res.status(404).json({ error: 'Slot not found' });
     res.status(400).json({ error: error.message });
   }
 });

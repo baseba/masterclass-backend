@@ -2,11 +2,89 @@ import sessionRouter from './sessions';
 import { Router } from 'express';
 import prisma from '../../prisma';
 import authenticateAdmin from '../../middleware/authenticateAdmin';
+import authenticateJwt from '../../middleware/authenticateJwt';
 
 // ...existing code...
 const router = Router();
 // Mount session routes under each course
 router.use('/:courseId/sessions', sessionRouter);
+
+// Reutilizable include config for courses with nested data
+const courseInclude = {
+  professors: true,
+  classes: {
+    include: {
+      slots: {
+        include: {
+          reservations: true,
+        },
+      },
+    },
+  },
+};
+
+// Get courses for the authenticated user
+router.get('/me', authenticateJwt, async (req, res) => {
+  try {
+    const studentId = (req.user as any)?.id;
+    if (!studentId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Find all courses where the student has a reservation in any slot of any class in the course
+    const studentCourses = await prisma.course.findMany({
+      where: {
+        classes: {
+          some: {
+            slots: {
+              some: {
+                reservations: {
+                  some: { studentId },
+                },
+              },
+            },
+          },
+        },
+      },
+      include: courseInclude,
+    });
+
+    return res.json(studentCourses);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching courses', error: err });
+  }
+});
+
+router.get('/:id', authenticateJwt, async (req, res) => {
+  try {
+    const studentId = (req.user as any)?.id;
+    if (!studentId) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    const studentCourses = await prisma.course.findUnique({
+      where: {
+        id: Number(req.params.id),
+        classes: {
+          some: {
+            slots: {
+              some: {
+                reservations: {
+                  some: { studentId },
+                },
+              },
+            },
+          },
+        },
+      },
+      include: courseInclude,
+    });
+
+    return res.json(studentCourses);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching courses', error: err });
+  }
+});
 
 // List all courses
 router.get('/', async (req, res) => {
@@ -27,12 +105,12 @@ router.get('/', async (req, res) => {
           },
         },
       },
-      include: { professors: true, classes: true },
+      include: courseInclude,
     });
     return res.json(studentCourses);
   }
   const courses = await prisma.course.findMany({
-    include: { professors: true, classes: true },
+    include: courseInclude,
   });
   res.json(courses);
 });
@@ -45,7 +123,7 @@ router.get('/:id', async (req, res) => {
     }
     const course = await prisma.course.findUnique({
       where: { id: Number(req.params.id) },
-      include: { professors: true, classes: true },
+      include: courseInclude,
     });
     if (!course) return res.status(404).json({ message: 'Course not found' });
     res.json(course);

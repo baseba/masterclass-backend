@@ -5,7 +5,7 @@ import authenticateAdmin from '../../middleware/authenticateAdmin';
 const router = Router();
 
 // List professors
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   const professors = await prisma.professor.findMany();
   res.json(professors);
 });
