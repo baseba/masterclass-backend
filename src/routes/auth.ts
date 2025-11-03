@@ -3,7 +3,6 @@ import passport from '../middleware/passport';
 import bcrypt from 'bcryptjs';
 import prisma from '../prisma';
 import { signJwt } from '../utils/jwt';
-import { User, AuthPayload } from '../types';
 
 const router = Router();
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authenticateJwt from '../middleware/authenticateJwt';
 import prisma from '../prisma';
+import genTransactionRef from '../utils/createTransactionRef';
 const router = Router();
 
 // Create reservation
@@ -10,17 +11,45 @@ router.post('/', authenticateJwt, async (req, res) => {
     return res.status(401).json({ message: 'User not authenticated' });
   }
 
-  const { slotId, status, paymentId } = req.body;
-  try {
-    const reservation = await prisma.reservation.create({
-      data: { slotId, studentId, status, paymentId },
-    });
-    res.status(201).json(reservation);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: 'Could not create reservation', error: err });
+  const { slotId } = req.body;
+
+  if (!slotId) {
+    return res.status(400).json({ message: 'slotId is required' });
   }
+
+  let txResult = null;
+  const slot = await prisma.slot.findUnique({
+    where: { id: Number(slotId) },
+    include: { class: true },
+  });
+  if (!slot) return res.status(404).json({ message: 'Slot not found' });
+
+  const amount = slot.class?.basePrice ?? 0;
+  txResult = await prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.create({
+      data: {
+        studentId,
+        amount,
+        currency: 'CLP',
+        status: 'pending',
+        paymentProvider: 'manual',
+        transactionReference: genTransactionRef(),
+      },
+    });
+
+    const reservation = await tx.reservation.create({
+      data: {
+        slotId: Number(slotId),
+        studentId,
+        status: 'pending',
+        paymentId: payment.id,
+      },
+    });
+
+    return { payment, reservation };
+  });
+
+  res.status(201).json(txResult);
 });
 
 // Get all reservations
