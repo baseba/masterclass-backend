@@ -31,9 +31,49 @@ app.use(
 app.use(bodyParser.json());
 app.use(passport.initialize());
 
+// Redact sensitive data in request bodies before logging
+const SENSITIVE_KEYS = new Set(
+  [
+    'password',
+    'passwordhash',
+    'confirmed_password',
+    'confirmpassword',
+    'token',
+    'authorization',
+    'jwt',
+    'secret',
+    'apikey',
+    'api_key',
+  ].map((k) => k.toLowerCase())
+);
+
+function redactBody(input: unknown): unknown {
+  if (Array.isArray(input)) return input.map((v) => redactBody(v));
+  if (input && typeof input === 'object') {
+    const obj: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(
+      input as Record<string, unknown>
+    )) {
+      const lower = key.toLowerCase();
+      if (SENSITIVE_KEYS.has(lower)) {
+        obj[key] = '[REDACTED]';
+      } else {
+        obj[key] = redactBody(value);
+      }
+    }
+    return obj;
+  }
+  return input;
+}
+
 morgan.token('body', (req: any) => {
   if (!['POST', 'PUT', 'PATCH'].includes(req.method)) return '';
-  return 'body: ' + JSON.stringify(req.body);
+  try {
+    const redacted = redactBody(req.body);
+    return 'body: ' + JSON.stringify(redacted);
+  } catch {
+    return 'body: [unserializable]';
+  }
 });
 
 app.use(

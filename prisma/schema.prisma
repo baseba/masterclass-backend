@@ -84,6 +84,7 @@ model Course {
   id          Int         @id @default(autoincrement())
   professors  Professor[]
   title       String
+  acronym     String
   description String
   isActive    Boolean     @default(true)
   classes     Class[]
@@ -149,7 +150,8 @@ model Payment {
   paymentProvider      String
   transactionReference String
   createdAt            DateTime      @default(now())
-  reservations         Reservation[]
+
+  reservations Reservation[]
 
   @@index([studentId])
   @@index([status])
@@ -170,4 +172,5 @@ model Admin {
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+  rut          String   @unique
 }

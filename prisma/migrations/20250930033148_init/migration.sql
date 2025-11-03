@@ -52,7 +52,7 @@ CREATE TABLE "public"."Course" (
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-
+    "acronym" TEXT NOT NULL,
     CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
 
@@ -129,6 +129,7 @@ CREATE TABLE "public"."Admin" (
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "rut" TEXT NOT NULL,
 
     CONSTRAINT "Admin_pkey" PRIMARY KEY ("id")
 );
