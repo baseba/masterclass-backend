@@ -8,15 +8,14 @@ import helloRouter from './routes/hello';
 import adminRouter from './routes/admin';
 import professorRouter from './routes/professor/professors';
 import courseRouter from './routes/course/courses';
+import studentRouter from './routes/student/students';
 import authenticateJwt from './middleware/authenticateJwt';
 import slotRouter from './controllers/slots.controller';
-import sessionRouter from './routes/course/sessions';
 import reservationRouter from './controllers/reservations.controller';
 import cronjobsController from './controllers/cronjobs.controller';
 
 const allowedOrigins = [
   'http://localhost:4321',
-  'https://tu-dominio.com',
   'https://masterclass-frontend.vercel.app',
   'https://salvaramos.cl',
 ];
@@ -84,6 +83,7 @@ app.use('/auth', authRouter);
 app.use('/admin', adminRouter);
 app.use('/professors', professorRouter);
 app.use('/courses', courseRouter);
+app.use('/students', studentRouter);
 app.use('/slots', slotRouter);
 app.use('/reservations', reservationRouter);
 app.use('/cron', cronjobsController);

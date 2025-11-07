@@ -155,6 +155,7 @@ model Payment {
 
   @@index([studentId])
   @@index([status])
+  @@index([transactionReference])
 }
 
 model Material {
