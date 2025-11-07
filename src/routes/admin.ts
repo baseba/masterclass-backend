@@ -2,9 +2,10 @@ import { Router } from 'express';
 import prisma from '../prisma';
 import bcrypt from 'bcryptjs';
 import { signJwt } from '../utils/jwt';
-import { Admin } from '../types';
-
-import authenticateAdmin from '../middleware/authenticateAdmin';
+import {
+  coursesAdminController,
+  paymentsAdminController,
+} from '../controllers/admin';
 
 const router = Router();
 
@@ -23,5 +24,8 @@ router.post('/login', async (req, res) => {
   const token = signJwt(admin, 'admin');
   res.json({ token });
 });
+
+router.use('/courses', coursesAdminController);
+router.use('/payments', paymentsAdminController);
 
 export default router;
