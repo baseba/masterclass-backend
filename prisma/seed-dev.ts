@@ -54,12 +54,36 @@ async function main() {
   // Students
   const studentsData = [
     {
-      name: 'Chico Terry',
+      name: 'Demo Student',
       email: 'student@demo.com',
       password: 'student123',
       phone: '1234567890',
       rut: '12345678-9',
       address: '123 Main St',
+    },
+    {
+      name: 'Student 2',
+      email: 'student2@demo.com',
+      password: 'student456',
+      phone: '2345678901',
+      rut: '98765432-1',
+      address: '456 Elm St',
+    },
+    {
+      name: 'Student 3',
+      email: 'student3@demo.com',
+      password: 'student789',
+      phone: '3456789012',
+      rut: '11223344-5',
+      address: '789 Oak St',
+    },
+    {
+      name: 'Student 4',
+      email: 'student4@demo.com',
+      password: 'student101',
+      phone: '4567890123',
+      rut: '55667788-0',
+      address: '101 Pine St',
     },
   ];
   const students: Array<{
@@ -151,7 +175,7 @@ async function main() {
       description: `
         Este curso aborda uno de los pilares de la física universitaria: cómo se comportan las cargas, los campos y las corrientes.
         Partimos con la electrostática, entendiendo fuerzas, potenciales y la ley de Gauss; avanzamos luego hacia la corriente eléctrica y los circuitos,
-        desde resistencias simples hasta circuitos RC con capac
+        desde resistencias simples hasta circuitos RC con capacitores. Después entramos en la magnetostática, analizando cómo las corrientes generan campos
         magnéticos con las leyes de Biot-Savart y Ampère, y finalmente cerramos con los campos electromagnéticos variables, incluyendo inducción, inductores,
         circuitos RLC y corriente alterna
       `,
@@ -1343,85 +1367,161 @@ async function main() {
     // }
   }
 
-  const slots = [];
-  // Find the Optimización course
-  const optimizacionCourse = courses.find((c) => c.title === 'Optimización');
+  // Slots
+  const slots: Array<{
+    id: number;
+    professorId: number;
+    classId: number;
+    startTime: Date;
+    endTime: Date;
+    modality: string;
+    status: string;
+    minStudents: number | null;
+    maxStudents: number;
+  }> = [];
+  for (const [i, classObj] of classes.entries()) {
+    // Get the course for this class
+    const course = courses.find((c) => c.id === classObj.courseId);
+    // Only create slots if the course has at least one professor assigned
+    if (!course || !course.professors || course.professors.length === 0)
+      continue;
 
-  if (optimizacionCourse) {
-    const optimizacionClasses = classes.filter(
-      (cls) => cls.courseId === optimizacionCourse.id
-    );
+    for (let k = 0; k < 2; k++) {
+      // Generate random start time between 9:00 and 21:00 today
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      // Pick a random day in the current month
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const randomDay = Math.floor(Math.random() * daysInMonth) + 1;
+      const minHour = 9;
+      const maxHour = 21;
+      const randomHour =
+        Math.floor(Math.random() * (maxHour - minHour + 1)) + minHour;
+      const randomMinute = Math.floor(Math.random() * 60);
+      const startTime = new Date(
+        currentYear,
+        currentMonth,
+        randomDay,
+        randomHour,
+        randomMinute,
+        0,
+        0
+      );
+      const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+      const modality = k % 2 === 0 ? SlotModality.remote : SlotModality.onsite;
+      const studentsGroup =
+        k % 3 === 0 ? SlotStudentsGroup.group : SlotStudentsGroup.private;
+      const location = modality === SlotModality.remote ? 'online' : 'sala A1';
+      const status = 'candidate';
+      const minStudents = 1;
+      const maxStudents = 10;
+      // Pick a random professor from the course's professors
+      const professorId =
+        course.professors[Math.floor(Math.random() * course.professors.length)]
+          .id;
+      let existing = await prisma.slot.findFirst({
+        where: { classId: classObj.id, startTime },
+      });
+      if (!existing) {
+        existing = await prisma.slot.create({
+          data: {
+            classId: classObj.id,
+            professorId,
+            startTime,
+            endTime,
+            modality,
+            studentsGroup,
+            location,
+            status,
+            minStudents,
+            maxStudents,
+          },
+        });
+        console.log('Slot created:', { classId: classObj.id, startTime });
+      }
+      slots.push(existing);
+    }
+  }
 
-    // Get the last 4 classes of the course
-    const targetClasses = optimizacionClasses.slice(-4);
+  // Reservations
+  for (const slot of slots) {
+    for (const student of students) {
+      let existing = await prisma.reservation.findFirst({
+        where: { slotId: slot.id, studentId: student.id },
+      });
+      if (!existing) {
+        // Find the course for this slot
+        const slotClass = classes.find((c) => c.id === slot.classId);
+        const courseForSlot = courses.find((c) => c.id === slotClass?.courseId);
 
-    // Calculate the next Monday
-    const today = new Date();
-    const nextMonday = new Date();
-    nextMonday.setDate(today.getDate() + ((8 - today.getDay()) % 7));
-    nextMonday.setHours(17, 0, 0, 0);
-
-    // Create slots for the next 4 weeks
-    for (let week = 0; week < 4; week++) {
-      const targetClass = targetClasses[week];
-      if (!targetClass) continue;
-
-      for (let day = 0; day < 5; day++) {
-        // Monday to Friday
-        for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
-          // 3 slots per day
-          const startTime = new Date(nextMonday);
-          startTime.setDate(nextMonday.getDate() + week * 7 + day);
-          startTime.setHours(17 + slotIndex, 0, 0, 0); // 17:00, 18:00, 19:00
-
-          const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-
-          const modality =
-            (day + slotIndex) % 2 === 0
-              ? SlotModality.remote
-              : SlotModality.onsite;
-          const location =
-            modality === SlotModality.remote ? 'online' : 'sala A1';
-          const status = 'candidate';
-          const minStudents = 1;
-          const maxStudents = 10;
-          const studentsGroup =
-            (day + slotIndex) % 3 === 0
-              ? SlotStudentsGroup.group
-              : SlotStudentsGroup.private;
-
-          // Assign a random professor from the course
-          const professorId =
-            optimizacionCourse.professors[
-              Math.floor(Math.random() * optimizacionCourse.professors.length)
-            ].id;
-
-          let existing = await prisma.slot.findFirst({
-            where: { classId: targetClass.id, startTime },
+        // Check if student is already enrolled in the course
+        if (courseForSlot) {
+          const studentInCourse = await prisma.course.findFirst({
+            where: {
+              id: courseForSlot.id,
+              students: {
+                some: { id: student.id },
+              },
+            },
           });
 
-          if (!existing) {
-            existing = await prisma.slot.create({
+          // If not enrolled, enroll the student
+          if (!studentInCourse) {
+            await prisma.course.update({
+              where: { id: courseForSlot.id },
               data: {
-                classId: targetClass.id,
-                professorId,
-                startTime,
-                endTime,
-                modality,
-                studentsGroup,
-                location,
-                status,
-                minStudents,
-                maxStudents,
+                students: {
+                  connect: { id: student.id },
+                },
               },
             });
-            console.log('Slot created:', {
-              classId: targetClass.id,
-              startTime,
+            console.log('Student enrolled in course:', {
+              studentId: student.id,
+              courseId: courseForSlot.id,
+              courseTitle: courseForSlot.title,
             });
           }
-          slots.push(existing);
         }
+
+        // Create a payment with random status and associate to reservation
+        const slotClassForAmount = classes.find((c) => c.id === slot.classId);
+        const amount = slotClassForAmount?.basePrice ?? 0;
+        const paymentStatuses: PaymentStatus[] = [
+          PaymentStatus.pending,
+          PaymentStatus.paid,
+          PaymentStatus.failed,
+          PaymentStatus.refunded,
+        ];
+        const randomStatus =
+          paymentStatuses[Math.floor(Math.random() * paymentStatuses.length)];
+
+        const payment = await prisma.payment.create({
+          data: {
+            studentId: student.id,
+            amount,
+            currency: 'CLP',
+            status: randomStatus,
+            paymentProvider: 'seed',
+            transactionReference: `SEED-${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`,
+          },
+        });
+
+        // Create the reservation linked to the payment
+        existing = await prisma.reservation.create({
+          data: {
+            slotId: slot.id,
+            studentId: student.id,
+            status: 'pending',
+            paymentId: payment.id,
+          },
+        });
+        console.log('Reservation created:', {
+          slotId: slot.id,
+          studentId: student.id,
+        });
       }
     }
   }

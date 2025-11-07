@@ -119,6 +119,7 @@ model Slot {
   minStudents   Int?
   maxStudents   Int
   reservations  Reservation[]
+  reference     String? // e.g., "Session 1 Clase 13 de Curso FIS1213 Prof. Carlos Saez" S1-CS-C13-FIS1213
 
   @@index([professorId])
   @@index([classId])
