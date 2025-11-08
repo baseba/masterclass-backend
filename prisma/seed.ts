@@ -8,6 +8,8 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const defaultBasePrice = 11000; // Define a default base price
+
 async function main() {
   // Admins
   const admins = [
@@ -24,8 +26,8 @@ async function main() {
       rut: '98.765.432-1',
     },
     {
-      name: 'Sebastian Espejp',
-      email: 'sebastin@outlook.com',
+      name: 'Sebastian Espejo',
+      email: 'sebastin@uc.cl',
       password: 'admin123',
       rut: '12.345.678-3',
     },
@@ -255,6 +257,7 @@ async function main() {
   // Find Cálculo II course
   const calculoII = courses.find((c) => c.title === 'Cálculo II');
 
+  const basePrice = 11000;
   // Classes for Cálculo II
   const calculoIIClasses = calculoII
     ? [
@@ -272,7 +275,7 @@ async function main() {
             - Reglas de integración: sustitución, integración por partes, fracciones parciales
           `,
           orderIndex: 0,
-          basePrice: 25000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -287,7 +290,7 @@ async function main() {
             - Criterios de convergencia: comparación directa y en el límite
           `,
           orderIndex: 1,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -302,7 +305,7 @@ async function main() {
             - Cálculo de límites de sucesiones
           `,
           orderIndex: 2,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -318,7 +321,7 @@ async function main() {
             - Convergencia absoluta vs. condicional
           `,
           orderIndex: 3,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -333,7 +336,7 @@ async function main() {
             - Resto de Taylor y convergencia de la aproximación
           `,
           orderIndex: 4,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -348,7 +351,7 @@ async function main() {
             - Posiciones relativas: paralelismo, perpendicularidad, intersecciones
           `,
           orderIndex: 5,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -364,7 +367,7 @@ async function main() {
             - Definición derivadas parciales como límites
           `,
           orderIndex: 6,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -379,7 +382,7 @@ async function main() {
             - Diferenciabilidad: condiciones básicas
           `,
           orderIndex: 7,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -394,7 +397,7 @@ async function main() {
             - Aplicaciones geométricas (planos y normales)
           `,
           orderIndex: 8,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -410,7 +413,7 @@ async function main() {
             - Optimización con y sin restricciones
           `,
           orderIndex: 9,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -424,7 +427,7 @@ async function main() {
             - Aplicaciones: cálculo de áreas y volúmenes
           `,
           orderIndex: 10,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -437,7 +440,7 @@ async function main() {
             - Cálculo de integrales triples con coordenadas cilíndricas
           `,
           orderIndex: 11,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
         {
@@ -452,7 +455,7 @@ async function main() {
             - Jacobiano y cambio de variable en integrales múltiples
           `,
           orderIndex: 12,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: calculoII.id,
         },
       ]
@@ -489,7 +492,7 @@ async function main() {
             - Técnicas algebraicas básicas para cálculo de límites
           `,
           orderIndex: 1,
-          basePrice: 28000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -503,7 +506,7 @@ async function main() {
             - Aplicaciones de continuidad
           `,
           orderIndex: 2,
-          basePrice: 28000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -517,7 +520,7 @@ async function main() {
             - Cálculo de derivadas mediante definición
           `,
           orderIndex: 3,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -531,7 +534,7 @@ async function main() {
             - Derivada de funciones polinomiales
           `,
           orderIndex: 4,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -545,7 +548,7 @@ async function main() {
             - Ejemplos combinados con otras reglas
           `,
           orderIndex: 5,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -559,7 +562,7 @@ async function main() {
             - Ejercicios con ecuaciones implícitas
           `,
           orderIndex: 6,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -573,7 +576,7 @@ async function main() {
             - Aplicaciones combinadas
           `,
           orderIndex: 7,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -587,7 +590,7 @@ async function main() {
             - Problemas de aplicación
           `,
           orderIndex: 8,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -601,7 +604,7 @@ async function main() {
             - Análisis completo de funciones
           `,
           orderIndex: 9,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -615,7 +618,7 @@ async function main() {
             - Problemas aplicados de ingeniería
           `,
           orderIndex: 10,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -628,7 +631,7 @@ async function main() {
             - Aplicaciones de los teoremas
           `,
           orderIndex: 11,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -642,7 +645,7 @@ async function main() {
             - Propiedades de la integral indefinida
           `,
           orderIndex: 12,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -655,7 +658,7 @@ async function main() {
             - Aplicaciones del teorema
           `,
           orderIndex: 13,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -669,7 +672,7 @@ async function main() {
             - Cálculo de áreas
           `,
           orderIndex: 14,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
         {
@@ -682,7 +685,7 @@ async function main() {
             - Estrategias de resolución
           `,
           orderIndex: 15,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: calculoI.id,
         },
       ]
@@ -719,7 +722,7 @@ async function main() {
             - Tipos de restricciones: Big-M, exclusión, máximo de días seguidos
           `,
           orderIndex: 1,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -733,7 +736,7 @@ async function main() {
             - Problemas de exclusión
           `,
           orderIndex: 2,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -748,7 +751,7 @@ async function main() {
             - Modelos equivalentes
           `,
           orderIndex: 3,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -763,7 +766,7 @@ async function main() {
             - Relación entre vértices y soluciones óptimas
           `,
           orderIndex: 4,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -777,7 +780,7 @@ async function main() {
             - Criterios de optimalidad
           `,
           orderIndex: 5,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -792,7 +795,7 @@ async function main() {
             - Método de la Fase I
           `,
           orderIndex: 6,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -807,7 +810,7 @@ async function main() {
             - Teorema de dualidad fuerte y débil
           `,
           orderIndex: 7,
-          basePrice: 42000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -821,7 +824,7 @@ async function main() {
             - Algoritmos de cortes de Gomory
           `,
           orderIndex: 8,
-          basePrice: 42000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -835,7 +838,7 @@ async function main() {
             - Propiedades de convexidad en funciones no lineales
           `,
           orderIndex: 9,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
         {
@@ -850,7 +853,7 @@ async function main() {
             - Diferencias entre problemas convexos y no convexos
           `,
           orderIndex: 10,
-          basePrice: 45000,
+          basePrice: defaultBasePrice,
           courseId: optimizacion.id,
         },
       ]
@@ -891,7 +894,7 @@ async function main() {
             - Representación con líneas de campo
           `,
           orderIndex: 1,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -906,7 +909,7 @@ async function main() {
             - Fuerza eléctrica sobre una distribución de carga
           `,
           orderIndex: 2,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -920,7 +923,7 @@ async function main() {
             - Definición de potencial eléctrico y relación con el campo
           `,
           orderIndex: 3,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -936,7 +939,7 @@ async function main() {
             - Campo eléctrico como campo conservativo
           `,
           orderIndex: 4,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -951,7 +954,7 @@ async function main() {
             - Asociación de capacitores en serie y paralelo
           `,
           orderIndex: 5,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -965,7 +968,7 @@ async function main() {
             - Cálculo de capacitancia con dieléctricos
           `,
           orderIndex: 6,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -980,7 +983,7 @@ async function main() {
             - Cálculo diferencial de resistencias
           `,
           orderIndex: 7,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -994,7 +997,7 @@ async function main() {
             - Asociación y equivalencia de capacitores
           `,
           orderIndex: 8,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1006,7 +1009,7 @@ async function main() {
             - Constante de tiempo (τ) y su interpretación física
           `,
           orderIndex: 9,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1020,7 +1023,7 @@ async function main() {
             - Fuerza magnética sobre corrientes en conductores
           `,
           orderIndex: 10,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1033,7 +1036,7 @@ async function main() {
             - Comparación entre ambos métodos y criterios de uso
           `,
           orderIndex: 11,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1045,7 +1048,7 @@ async function main() {
             - Concepto de autoinducción e inductancia mutua
           `,
           orderIndex: 12,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1059,7 +1062,7 @@ async function main() {
             - Condiciones de resonancia en circuitos RLC
           `,
           orderIndex: 13,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
         {
@@ -1074,7 +1077,7 @@ async function main() {
             - Aplicaciones generales de ondas electromagnéticas
           `,
           orderIndex: 14,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: electromagnetismo.id,
         },
       ]
@@ -1112,7 +1115,7 @@ async function main() {
             - Ecuaciones diferenciales simples aplicadas a movimiento
           `,
           orderIndex: 0,
-          basePrice: 25000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1126,7 +1129,7 @@ async function main() {
             - Uso de gráficas x–t, v–t y a–t
           `,
           orderIndex: 1,
-          basePrice: 30000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1140,7 +1143,7 @@ async function main() {
             - Movimiento circular no uniforme
           `,
           orderIndex: 2,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1155,7 +1158,7 @@ async function main() {
             - Problemas de superficie horizontal e inclinada
           `,
           orderIndex: 3,
-          basePrice: 32000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1168,7 +1171,7 @@ async function main() {
             - Aplicación de Newton a sistemas conectados
           `,
           orderIndex: 4,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1182,7 +1185,7 @@ async function main() {
             - Conservación de la energía mecánica
           `,
           orderIndex: 5,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1195,7 +1198,7 @@ async function main() {
             - Consideraciones de fase y representación gráfica
           `,
           orderIndex: 6,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1208,7 +1211,7 @@ async function main() {
             - Diferencia entre colisiones elásticas e inelásticas
           `,
           orderIndex: 7,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1222,7 +1225,7 @@ async function main() {
             - Ejemplos físicos: cohetes, cadenas, chorros de fluido
           `,
           orderIndex: 8,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1236,7 +1239,7 @@ async function main() {
             - Interpretación física del torque
           `,
           orderIndex: 9,
-          basePrice: 35000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1250,7 +1253,7 @@ async function main() {
             - Segunda Ley de Newton para rotación: Στ = I·α
           `,
           orderIndex: 10,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1264,7 +1267,7 @@ async function main() {
             - Trabajo y potencia en sistemas rotacionales
           `,
           orderIndex: 11,
-          basePrice: 38000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1277,7 +1280,7 @@ async function main() {
             - Colisiones que involucran rotación e impulso angular
           `,
           orderIndex: 12,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
         {
@@ -1290,7 +1293,7 @@ async function main() {
             - Técnicas de examen y errores comunes
           `,
           orderIndex: 13,
-          basePrice: 40000,
+          basePrice: defaultBasePrice,
           courseId: dinamica.id,
         },
       ]
@@ -1320,27 +1323,6 @@ async function main() {
       course.title === 'Dinámica'
     )
       continue; // Skip, already created
-
-    // for (let j = 1; j <= 2; j++) {
-    //   const title = `${course.title} - Clase ${j}`;
-    //   let existing = await prisma.class.findFirst({
-    //     where: { title, courseId: course.id },
-    //   });
-    //   if (!existing) {
-    //     existing = await prisma.class.create({
-    //       data: {
-    //         title,
-    //         description: `Descripción de la clase ${j} del curso ${course.title}`,
-    //         objectives: `Objetivos de la clase ${j}`,
-    //         orderIndex: j,
-    //         basePrice: 30000,
-    //         courseId: course.id,
-    //       },
-    //     });
-    //     console.log('Class created:', { title });
-    //   }
-    //   classes.push(existing);
-    // }
   }
 
   const slots = [];
@@ -1376,19 +1358,13 @@ async function main() {
 
           const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
 
-          const modality =
-            (day + slotIndex) % 2 === 0
-              ? SlotModality.remote
-              : SlotModality.onsite;
+          const modality = SlotModality.remote;
           const location =
             modality === SlotModality.remote ? 'online' : 'sala A1';
           const status = 'candidate';
           const minStudents = 1;
           const maxStudents = 10;
-          const studentsGroup =
-            (day + slotIndex) % 3 === 0
-              ? SlotStudentsGroup.group
-              : SlotStudentsGroup.private;
+          const studentsGroup = SlotStudentsGroup.group;
 
           // Assign a random professor from the course
           const professorId =
