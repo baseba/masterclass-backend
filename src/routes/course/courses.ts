@@ -136,6 +136,57 @@ router.get('/', async (req, res) => {
   res.json(courses);
 });
 
+router.get('/:acronym/slots', async (req, res) => {
+  try {
+    const { acronym } = req.params;
+
+    // Debugging log to check the received acronym
+    console.log('Received acronym:', acronym);
+
+    if (!acronym) {
+      return res.status(400).json({ message: 'Course acronym is required' });
+    }
+
+    const course = await prisma.course.findFirst({
+      where: {
+        acronym: String(acronym),
+      },
+      select: {
+        classes: {
+          select: {
+            title: true,
+            slots: {
+              include: {
+                reservations: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      console.log('Course not found for acronym:', acronym); // Debugging log
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Filter out slots that are full
+    course.classes = course.classes.map((cls: any) => ({
+      ...cls,
+      slots: (cls.slots || []).filter((slot: any) => {
+        const max = slot.maxStudents ?? Infinity;
+        const resCount = (slot.reservations || []).length;
+        return resCount < max;
+      }),
+    }));
+
+    res.json(course);
+  } catch (err) {
+    console.error('Error fetching slots for acronym:', req.params.acronym, err); // Debugging log
+    res.status(500).json({ message: 'Error fetching slots', error: err });
+  }
+});
+
 // Get course by ID
 router.get('/:id', authenticateJwt, async (req, res) => {
   try {
