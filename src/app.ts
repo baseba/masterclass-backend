@@ -17,7 +17,7 @@ import cronjobsController from './controllers/cronjobs.controller';
 const allowedOrigins = [
   'http://localhost:4321',
   'https://masterclass-frontend.vercel.app',
-  'https://salvaramos.cl',
+  'https://www.salvaramos.cl',
 ];
 
 const app = express();
