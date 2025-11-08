@@ -52,6 +52,11 @@ router.get('/enroll', async (req, res) => {
 
 // Mount session routes under each course
 router.use('/:courseId/sessions', sessionRouter);
+router.get('/sessions', async (req, res) => {
+  //get all sesions
+  const sessions = await prisma.class.findMany();
+  res.json(sessions);
+});
 
 // Reutilizable include config for courses with nested data
 const courseInclude = {
