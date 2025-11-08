@@ -132,3 +132,20 @@ Session routes are nested under courses and require authentication (admin or ass
 All session routes require a valid JWT in the `Authorization` header: `Bearer <token>`.
 
 All routes (except `/admin/login`) require the admin JWT in the `Authorization` header: `Bearer <token>`.
+
+## Cron job / Notification
+
+This app exposes a protected endpoint to run daily cron jobs that notify students with meet links for remote slots happening the next day.
+
+- POST `/cron/daily-job?key=<CRON_KEY>` — run the daily job (protected by `CRON_KEY` env var).
+
+Environment variables used for email sending:
+
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` — SMTP server credentials used by nodemailer.
+- `FROM_EMAIL` — optional from address for outgoing emails.
+- `CRON_KEY` — simple key to protect the cron endpoint.
+
+Notes:
+
+- The cron job looks for remote slots (`modality = remote`) scheduled for the next calendar day and sends the link found in the slot's `location` field to all confirmed reservations.
+- There is no database flag to avoid duplicate sends, so make sure the cron runs once per day (or we can add a `notified` flag in the DB in a follow-up change).

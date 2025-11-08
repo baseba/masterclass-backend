@@ -126,14 +126,15 @@ model Slot {
 }
 
 model Reservation {
-  id        Int               @id @default(autoincrement())
-  student   Student           @relation(fields: [studentId], references: [id])
-  studentId Int
-  slot      Slot              @relation(fields: [slotId], references: [id])
-  slotId    Int
-  status    ReservationStatus @default(pending)
-  payment   Payment?          @relation(fields: [paymentId], references: [id])
-  paymentId Int?
+  id                 Int               @id @default(autoincrement())
+  student            Student           @relation(fields: [studentId], references: [id])
+  studentId          Int
+  slot               Slot              @relation(fields: [slotId], references: [id])
+  slotId             Int
+  status             ReservationStatus @default(pending)
+  payment            Payment?          @relation(fields: [paymentId], references: [id])
+  paymentId          Int?
+  notificationSentAt DateTime?
 
   @@index([studentId])
   @@index([slotId])

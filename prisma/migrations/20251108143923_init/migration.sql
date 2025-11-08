@@ -50,9 +50,10 @@ CREATE TABLE "public"."Student" (
 CREATE TABLE "public"."Course" (
     "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
+    "acronym" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "acronym" TEXT NOT NULL,
+
     CONSTRAINT "Course_pkey" PRIMARY KEY ("id")
 );
 
@@ -187,7 +188,13 @@ CREATE INDEX "Payment_studentId_idx" ON "public"."Payment"("studentId");
 CREATE INDEX "Payment_status_idx" ON "public"."Payment"("status");
 
 -- CreateIndex
+CREATE INDEX "Payment_transactionReference_idx" ON "public"."Payment"("transactionReference");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Admin_email_key" ON "public"."Admin"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Admin_rut_key" ON "public"."Admin"("rut");
 
 -- CreateIndex
 CREATE INDEX "_CourseToProfessor_B_index" ON "public"."_CourseToProfessor"("B");
