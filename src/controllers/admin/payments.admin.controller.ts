@@ -79,4 +79,49 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, status, transactionReference } = req.body;
+
+    // Validate input
+    if (!amount && !status && !transactionReference) {
+      return res.status(400).json({ message: 'No fields to update provided' });
+    }
+
+    // Validate status
+    const validStatuses = ['pending', 'paid', 'failed', 'refunded'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: `Invalid status value. Valid values are: ${validStatuses.join(
+          ', '
+        )}`,
+      });
+    }
+
+    // Build update data
+    const updateData: any = {};
+    if (amount !== undefined) updateData.amount = amount;
+    if (status !== undefined) updateData.status = status;
+    if (transactionReference !== undefined)
+      updateData.transactionReference = transactionReference;
+
+    // Update payment
+    const updatedPayment = await prisma.payment.update({
+      where: { id: Number(id) },
+      data: updateData,
+    });
+
+    res.json({
+      message: 'Payment updated successfully',
+      data: updatedPayment,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: 'Error updating payment',
+      error: (err as Error).message,
+    });
+  }
+});
+
 export default router;
