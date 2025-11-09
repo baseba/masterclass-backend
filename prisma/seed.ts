@@ -8,14 +8,14 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const defaultBasePrice = 11000; // Define a default base price
+const defaultBasePrice = 11000;
 
 async function main() {
   // Admins
   const admins = [
     {
       name: 'Carlos Saez',
-      email: 'salvaramos@gmail.com',
+      email: 'salvaramos.ing@gmail.com',
       password: 'admin123',
       rut: '12.345.678-9',
     },
