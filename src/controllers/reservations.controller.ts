@@ -133,24 +133,53 @@ router.put('/:id', authenticateJwt, async (req, res) => {
         const student = final.student as any;
         const slot = (final.slot as any) || {};
 
+        // Resolve meet link the same way cronjob does (ensureMeetLink may persist into slot.location)
+        let resolvedMeetLink = slot.location || '';
+        try {
+          const meetUtil = await import('../utils/meet');
+          resolvedMeetLink = await meetUtil.ensureMeetLink(slot);
+        } catch (meetErr) {
+          console.warn('Meet link resolution failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
+        }
+
         const formatChile = (d: any) =>
           new Date(d).toLocaleString('es-CL', { timeZone: 'America/Santiago' });
 
         const subject = `Confirmación de reserva: ${slot.class?.title ?? ''}`;
         const when = slot.startTime ? formatChile(slot.startTime) : '';
-        const text = `Hola ${student.name},\n\nTu reserva para la clase "${
-          slot.class?.title ?? ''
-        }" ha sido confirmada.\nFecha y hora: ${when}\n\nEnlace de la reunión: ${
-          slot.location || ''
-        }\n\n¡Nos vemos en clase!`;
+        const text = `Hola ${student.name},\n\nTu reserva para la clase "${slot.class?.title ?? ''}" ha sido confirmada.\nFecha y hora: ${when}\n\nEnlace de la reunión: ${resolvedMeetLink || ''}\n\n¡Nos vemos en clase!`;
 
-        const html = `<div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;"><h2 style="margin-bottom:6px;">${
-          slot.class?.title ?? 'Tu clase'
-        }</h2><p>Hola ${
-          student.name
-        },</p><p>Tu reserva ha sido <strong>confirmada</strong> para el <strong>${when}</strong>.</p><p><a href="${
-          slot.location || ''
-        }" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Unirse a la reunión</a></p><p style="color:#6b7280;font-size:13px;">Si no puedes asistir, por favor cancela la reserva.</p><p style="font-size:13px;color:#6b7280;">¡Nos vemos!</p></div>`;
+        const escapeHtml = (s: string) =>
+          s
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+
+        const urlHost = (() => {
+          try {
+            const u = new URL(resolvedMeetLink);
+            return `${u.hostname}${u.pathname}`;
+          } catch (e) {
+            return resolvedMeetLink;
+          }
+        })();
+
+        const html = `
+          <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+            <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+            <p>Hola ${escapeHtml(student.name || 'Estudiante')},</p>
+            <p>Tu reserva ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(when)}</strong>.</p>
+            <p>
+              <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Unirse a la reunión</a>
+            </p>
+            <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0;" />
+            <p style="font-size:13px;color:#6b7280;">Si no puedes asistir, por favor cancela la reserva.</p>
+            <p style="font-size:13px;color:#6b7280;">¡Nos vemos!</p>
+          </div>
+        `;
 
         const sendWithRetry = async (opts: any, attempts = 3) => {
           let lastErr: any = null;
