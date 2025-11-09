@@ -89,11 +89,15 @@ router.post('/daily-job', async (req, res) => {
 
         try {
           const student = (r as any).student as any;
-          const subject = `Meet link for tomorrow's class: ${slot.class?.title ?? ''}`;
+          const subject = `Enlace para la clase de mañana: ${slot.class?.title ?? ''}`;
 
-          const text = `Hi ${student.name},\n\nThis is the meet link for your class scheduled tomorrow (${new Date(
-            slot.startTime,
-          ).toLocaleString()}):\n\n${resolvedMeetLink}\n\nSee you then!`;
+          // Format dates in Chilean time (America/Santiago) and Spanish locale
+          const formatChile = (d: any) =>
+            new Date(d).toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+
+          const whenText = formatChile(slot.startTime);
+
+          const text = `Hola ${student.name},\n\nAquí está el enlace para tu clase programada mañana (${whenText}):\n\n${resolvedMeetLink}\n\n¡Nos vemos entonces!`;
 
           const escapeHtml = (s: string) =>
             s
@@ -103,9 +107,9 @@ router.post('/daily-job', async (req, res) => {
               .replace(/"/g, '&quot;')
               .replace(/'/g, '&#39;');
 
-          const prettyTitle = escapeHtml(slot.class?.title ?? 'Your class');
-          const prettyStudent = escapeHtml(student.name || 'Student');
-          const when = escapeHtml(new Date(slot.startTime).toLocaleString());
+          const prettyTitle = escapeHtml(slot.class?.title ?? 'Tu clase');
+          const prettyStudent = escapeHtml(student.name || 'Estudiante');
+          const when = escapeHtml(formatChile(slot.startTime));
 
           const urlHost = (() => {
             try {
@@ -119,14 +123,14 @@ router.post('/daily-job', async (req, res) => {
           const html = `
             <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
               <h2 style="margin-bottom:6px;">${prettyTitle}</h2>
-              <p>Hi ${prettyStudent},</p>
-              <p>This is the meet link for your class scheduled tomorrow: <strong>${when}</strong></p>
+              <p>Hola ${prettyStudent},</p>
+              <p>Este es el enlace para tu clase programada mañana: <strong>${when}</strong></p>
               <p>
-                <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Join meeting</a>
+                <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Unirse a la reunión</a>
               </p>
-              <p style="color:#6b7280;font-size:13px;">Or open in your browser: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
+              <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
               <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0;" />
-              <p style="font-size:13px;color:#6b7280;">See you then!</p>
+              <p style="font-size:13px;color:#6b7280;">¡Nos vemos!</p>
             </div>
           `;
 
