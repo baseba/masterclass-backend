@@ -63,3 +63,32 @@ export async function ensureMeetLink(slot: any): Promise<string> {
   // as a last resort return our computed URL
   return jitsiUrl;
 }
+
+/**
+ * Generate a deterministic Jitsi room URL from slot metadata (class title + date + slot id).
+ * This function does not read or write the database and does not rely on `slot.location`.
+ */
+export function generateMeetLinkFromSlot(slot: any): string {
+  const title = (slot.class && slot.class.title) || 'masterclass';
+  const start = slot.startTime ? new Date(slot.startTime) : new Date();
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${start.getFullYear()}${pad(start.getMonth() + 1)}${pad(
+    start.getDate()
+  )}`;
+
+  const slugify = (s: string) =>
+    s
+      .toString()
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+  const base = `${slugify(title)}-${dateStr}-${slot.id}`;
+  const room = base.slice(0, 64);
+  return `https://meet.jit.si/${room}`;
+}

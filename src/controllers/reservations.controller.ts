@@ -133,13 +133,13 @@ router.put('/:id', authenticateJwt, async (req, res) => {
         const student = final.student as any;
         const slot = (final.slot as any) || {};
 
-        // Resolve meet link the same way cronjob does (ensureMeetLink may persist into slot.location)
-        let resolvedMeetLink = slot.location || '';
+        // Generate deterministic meet link from slot metadata (no need to rely on slot.location)
+        let resolvedMeetLink = '';
         try {
           const meetUtil = await import('../utils/meet');
-          resolvedMeetLink = await meetUtil.ensureMeetLink(slot);
+          resolvedMeetLink = meetUtil.generateMeetLinkFromSlot(slot as any);
         } catch (meetErr) {
-          console.warn('Meet link resolution failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
+          console.warn('Meet link generation failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
         }
 
         const formatChile = (d: any) =>

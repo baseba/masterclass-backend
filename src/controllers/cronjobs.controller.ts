@@ -52,17 +52,18 @@ router.post('/daily-job', async (req, res) => {
       let failed = 0;
       const errors: string[] = [];
 
-      // Ensure or create a meet link (persisted to slot.location). If that fails, we'll skip sending.
-      let resolvedMeetLink = slot.location || '';
+      // Generate deterministic meet link from slot metadata (no need to rely on slot.location)
+      let resolvedMeetLink = '';
       try {
         const meetUtil = await import('../utils/meet');
-        resolvedMeetLink = await meetUtil.ensureMeetLink(slot);
+        // use generator that does not require DB persistence
+        resolvedMeetLink = meetUtil.generateMeetLinkFromSlot(slot as any);
       } catch (err) {
-        console.warn('Meet link resolution failed for slot', slot.id, String(err));
+        console.warn('Meet link generation failed for slot', slot.id, String(err));
       }
 
       if (!resolvedMeetLink) {
-        errors.push('No meet link available for this slot, skipping');
+        errors.push('Could not generate meet link for this slot, skipping');
         results.push({ slotId: slot.id, sent, failed, errors });
         continue;
       }
