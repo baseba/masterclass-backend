@@ -4,12 +4,10 @@ import passport from 'passport';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import authRouter from './routes/auth';
-import helloRouter from './routes/hello';
 import adminRouter from './routes/admin';
 import professorRouter from './routes/professor/professors';
 import courseRouter from './routes/course/courses';
 import studentRouter from './routes/student/students';
-import authenticateJwt from './middleware/authenticateJwt';
 import slotRouter from './controllers/slots.controller';
 import reservationRouter from './controllers/reservations.controller';
 import cronjobsController from './controllers/cronjobs.controller';
@@ -87,15 +85,14 @@ app.use('/students', studentRouter);
 app.use('/slots', slotRouter);
 app.use('/reservations', reservationRouter);
 app.use('/cron', cronjobsController);
-app.use('/', helloRouter);
 
-app.get('/public', (req, res) => {
-  res.json({ message: 'Public endpoint' });
-});
-
-app.get('/protected', authenticateJwt, (req, res) => {
-  // @ts-ignore
-  res.json({ message: `Hello ${req.user.email}` });
+app.get('/ping', (req, res) => {
+  res.json({
+    message: 'pong',
+    serverStatus: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.floor(process.uptime())} seconds`,
+  });
 });
 
 export default app;
