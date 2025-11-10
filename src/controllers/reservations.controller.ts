@@ -120,7 +120,7 @@ router.put('/:id', authenticateJwt, async (req, res) => {
     try {
       const final = await prisma.reservation.findUnique({
         where: { id },
-        include: { student: true, slot: { include: { class: true } } },
+        include: { student: true, slot: { include: { class: true, professor: true } } },
       });
       const finalStatus = final?.status;
       const alreadyNotified = (final as any)?.notificationSentAt;
@@ -198,6 +198,40 @@ router.put('/:id', authenticateJwt, async (req, res) => {
 
         try {
           await sendWithRetry({ to: student.email, subject, text, html }, 3);
+
+          // Also notify the professor/teacher
+          try {
+            const professor = (final.slot as any)?.professor as any;
+            if (professor && professor.email) {
+              const profSubject = `Reserva confirmada: ${slot.class?.title ?? ''}`;
+              const profText = `Hola ${professor.name || 'Profesor'},\n\nLa reserva del estudiante ${student.name} para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido confirmada.\n\nEnlace de la reunión: ${resolvedMeetLink || ''}\n\nSaludos.`;
+
+              const profHtml = `
+                <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+                  <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+                  <p>Hola ${escapeHtml(professor.name || 'Profesor')},</p>
+                  <p>La reserva del estudiante <strong>${escapeHtml(student.name || '')}</strong> para tu clase ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(when)}</strong>.</p>
+                  <p>
+                    <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#10b981;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Abrir enlace de la reunión</a>
+                  </p>
+                  <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
+                </div>
+              `;
+
+              try {
+                await sendWithRetry({ to: professor.email, subject: profSubject, text: profText, html: profHtml }, 3);
+              } catch (profMailErr) {
+                console.warn(
+                  'Failed to send confirmation email to professor for reservation',
+                  id,
+                  String(profMailErr)
+                );
+              }
+            }
+          } catch (profErr) {
+            console.warn('Error while preparing/sending professor notification', String(profErr));
+          }
+
           // mark reservation as notified
           try {
             await prisma.reservation.update({
