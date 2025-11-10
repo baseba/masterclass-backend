@@ -48,7 +48,31 @@ router.post('/', async (req, res) => {
 // READ ALL
 router.get('/', async (req, res) => {
   try {
-    const slots = await prismaSlot.findMany();
+    const slots = await prismaSlot.findMany({
+      include: {
+        professor: true,
+        class: {
+          select: {
+            id: true,
+            title: true,
+            orderIndex: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                acronym: true,
+              },
+            },
+          },
+        },
+        reservations: {
+          include: {
+            student: true,
+            payment: true,
+          },
+        },
+      },
+    });
     res.json(slots);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

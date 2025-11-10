@@ -220,26 +220,15 @@ router.get('/:id', authenticateJwt, async (req, res) => {
           include: {
             slots: {
               where: {
-                OR: [
-                  // Slots donde el estudiante tiene reserva
-                  {
-                    reservations: {
-                      some: { studentId },
-                    },
-                  },
-                  // Slots de clases donde el estudiante no tiene ninguna reserva en ningún slot
-                  {
-                    class: {
-                      slots: {
-                        every: {
-                          reservations: {
-                            none: { studentId },
-                          },
-                        },
+                class: {
+                  slots: {
+                    every: {
+                      reservations: {
+                        none: { studentId },
                       },
                     },
                   },
-                ],
+                },
               },
               include: {
                 reservations: {
