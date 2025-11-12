@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../../prisma';
 import authenticateAdmin from '../../middleware/authenticateAdmin';
 import { Prisma } from '@prisma/client';
+import { parsePagination } from '../helpers/parsePagination';
 
 // Admin Courses Router
 const router = Router();
@@ -30,19 +31,26 @@ const fullCourseInclude = {
 // GET /admin/courses - consolidated index
 router.get('/', authenticateAdmin, async (req, res) => {
   try {
-    const courses = await prisma.course.findMany({
-      select: {
-        id: true,
-        title: true,
-        acronym: true,
-        description: true,
-        isActive: true,
-        _count: {
-          select: { classes: true, students: true, professors: true },
+    const { page, pageSize, skip, take } = parsePagination(req.query);
+
+    const [total, courses] = await Promise.all([
+      prisma.course.count(),
+      prisma.course.findMany({
+        select: {
+          id: true,
+          title: true,
+          acronym: true,
+          description: true,
+          isActive: true,
+          _count: {
+            select: { classes: true, students: true, professors: true },
+          },
         },
-      },
-      orderBy: { id: 'asc' },
-    });
+        skip,
+        take,
+        orderBy: { id: 'asc' },
+      }),
+    ]);
 
     const result = courses.map((c: (typeof courses)[number]) => ({
       id: c.id,
@@ -55,7 +63,13 @@ router.get('/', authenticateAdmin, async (req, res) => {
       professorsCount: c._count.professors,
     }));
 
-    res.json(result);
+    res.json({
+      page,
+      pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+      data: result,
+    });
   } catch (err) {
     res.status(500).json({ message: 'Error fetching courses', error: err });
   }
