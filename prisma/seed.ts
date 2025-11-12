@@ -1401,6 +1401,59 @@ async function main() {
       }
     }
   }
+
+  // Add "Clase Libre" to all courses
+  console.log('\nAdding "Clase Libre" to all courses...');
+  const allCourses = await prisma.course.findMany({
+    include: {
+      classes: {
+        orderBy: {
+          orderIndex: 'desc',
+        },
+        take: 1,
+      },
+    },
+  });
+
+  for (const course of allCourses) {
+    // Calculate the next orderIndex (last + 1)
+    const lastOrderIndex =
+      course.classes.length > 0 ? course.classes[0].orderIndex : -1;
+    const newOrderIndex = lastOrderIndex + 1;
+
+    // Check if "Clase Libre" already exists for this course
+    const existingFreeClass = await prisma.class.findFirst({
+      where: {
+        courseId: course.id,
+        title: 'Clase Libre',
+      },
+    });
+
+    if (existingFreeClass) {
+      console.log(
+        `"Clase Libre" already exists for course: ${course.title} (${course.acronym})`
+      );
+      continue;
+    }
+
+    // Create the "Clase Libre" class
+    await prisma.class.create({
+      data: {
+        courseId: course.id,
+        title: 'Clase Libre',
+        description:
+          'Clase libre para consultas generales, dudas específicas o temas a solicitud del estudiante.',
+        objectives:
+          'Resolver dudas puntuales, repasar contenidos específicos o profundizar en temas de interés del estudiante.',
+        orderIndex: newOrderIndex,
+        basePrice: defaultBasePrice,
+      },
+    });
+
+    console.log(
+      `Created "Clase Libre" for course: ${course.title} (${course.acronym}) with orderIndex: ${newOrderIndex}`
+    );
+  }
 }
 
 main()

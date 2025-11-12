@@ -94,6 +94,7 @@ CREATE TABLE "public"."Reservation" (
     "slotId" INTEGER NOT NULL,
     "status" "public"."ReservationStatus" NOT NULL DEFAULT 'pending',
     "paymentId" INTEGER,
+    "notificationSentAt" TIMESTAMP(3),
 
     CONSTRAINT "Reservation_pkey" PRIMARY KEY ("id")
 );
