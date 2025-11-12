@@ -5,6 +5,7 @@ import { signJwt } from '../utils/jwt';
 import {
   coursesAdminController,
   paymentsAdminController,
+  dashboardAdminController,
 } from '../controllers/admin';
 
 const router = Router();
@@ -25,6 +26,7 @@ router.post('/login', async (req, res) => {
   res.json({ token });
 });
 
+router.use('/dashboard', dashboardAdminController);
 router.use('/courses', coursesAdminController);
 router.use('/payments', paymentsAdminController);
 
