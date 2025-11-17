@@ -4,11 +4,23 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import bcrypt from 'bcryptjs';
 import prisma from '../prisma';
 import { User } from '../types';
+import { signConfirmationToken } from '../utils/jwt';
+import { sendMail } from '../utils/mailer';
+
+function escapeHtml(str: string) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 passport.use(
   new LocalStrategy(
-    { usernameField: 'email', passwordField: 'password' },
+    { usernameField: 'email', passwordField: 'password', passReqToCallback: true },
     async (
+      req: any,
       email: string,
       password: string,
       done: (error: any, user?: any, info?: any) => void
@@ -27,7 +39,28 @@ passport.use(
           return done(null, false, { message: 'Incorrect password.' });
         // Ensure the user has confirmed their email
         if ((student as any).confirmed === false) {
-          return done(null, false, { message: 'Please confirm your email address.' });
+          // Attempt to resend confirmation email when a user tries to login but
+          // hasn't confirmed their account yet. Do not block the login flow on
+          // email errors - just log them and return the informative message.
+          try {
+            const token = signConfirmationToken(student.email);
+            const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+            const confirmUrl = `${appUrl.replace(/\/$/, '')}/auth/confirm?token=${encodeURIComponent(
+              token
+            )}`;
+            const subject = 'Confirma tu cuenta';
+            const text = `Hola ${student.name || ''},\n\nPor favor confirma tu cuenta usando este enlace: ${confirmUrl}\n\nSi no solicitaste esto, ignora este correo.`;
+            const html = `<p>Hola ${escapeHtml(student.name || '')},</p><p>Por favor confirma tu cuenta usando este enlace:</p><p><a href="${escapeHtml(
+              confirmUrl
+            )}">Confirmar cuenta</a></p>`;
+            await sendMail({ to: student.email, subject, text, html });
+          } catch (err) {
+            console.error('Failed to resend confirmation email on login attempt', err);
+          }
+          return done(null, false, {
+            message:
+              'Please confirm your email address. A confirmation link was (re)sent to your email.',
+          });
         }
         return done(null, student);
       } catch (err) {
