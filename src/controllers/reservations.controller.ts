@@ -55,8 +55,26 @@ router.post('/', authenticateJwt, async (req, res) => {
 
 // Get all reservations
 router.get('/', authenticateJwt, async (req, res) => {
+  const user = req.user as any;
+  if (!user) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+
   const reservations = await prisma.reservation.findMany({
-    include: { slot: true, student: true, payment: true },
+    where: { studentId: user.id },
+    include: {
+      slot: {
+        include: {
+          class: {
+            include: {
+              course: true,
+            },
+          },
+          professor: true,
+        },
+      },
+      payment: true,
+    },
   });
   res.json(reservations);
 });

@@ -4,6 +4,7 @@ import prisma from '../../prisma';
 import authenticateAdmin from '../../middleware/authenticateAdmin';
 import authenticateJwt from '../../middleware/authenticateJwt';
 import genTransactionRef from '../../utils/createTransactionRef';
+import { SlotStatus } from '@prisma/client';
 
 // ...existing code...
 const router = Router();
@@ -163,6 +164,7 @@ router.get('/:acronym/slots', async (req, res) => {
             slots: {
               include: {
                 reservations: true,
+                professor: true,
               },
             },
           },
@@ -181,7 +183,7 @@ router.get('/:acronym/slots', async (req, res) => {
       slots: (cls.slots || []).filter((slot: any) => {
         const max = slot.maxStudents ?? Infinity;
         const resCount = (slot.reservations || []).length;
-        return resCount < max;
+        return resCount < max && slot.status === SlotStatus.candidate;
       }),
     }));
 
