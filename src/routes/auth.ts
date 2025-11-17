@@ -60,22 +60,32 @@ router.post('/register', async (req, res) => {
   router.get('/confirm', async (req, res) => {
     try {
       const token = String(req.query.token || '');
-      if (!token) return res.status(400).json({ message: 'Token is required' });
+      if (!token)
+        return res.status(400).send(renderHtml('Token is required', 'The confirmation token is missing.'));
       let payload: any;
       try {
         payload = verifyConfirmationToken(token);
       } catch (err) {
-        return res.status(400).json({ message: 'Invalid or expired token' });
+        return res
+          .status(400)
+          .send(renderHtml('Invalid or expired token', 'The confirmation token is invalid or has expired.'));
       }
       const email = payload.email;
       const student = await prisma.student.findUnique({ where: { email } });
-      if (!student) return res.status(404).json({ message: 'User not found' });
-    await (prisma as any).student.update({ where: { email }, data: { confirmed: true } });
+      if (!student)
+        return res.status(404).send(renderHtml('User not found', 'No account matches this confirmation token.'));
+      await prisma.student.update({ where: { email }, data: { confirmed: true } } as any);
       // Optionally redirect to a frontend confirmation page
       const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-      return res.json({ message: 'Account confirmed', email });
+      const message = `Your account (${escapeHtml(email)}) has been confirmed.`;
+      const continueLink = `${appUrl.replace(/\/$/, '')}`;
+      const salvaramosLink = `https://salvaramos.cl/auth/confirm?token=${encodeURIComponent(token)}`;
+      const body = `${message} <p><a href="${escapeHtml(continueLink)}">Go to app</a></p><p><a href="${escapeHtml(
+        salvaramosLink
+      )}" target="_blank" rel="noopener">Open at salvaramos.cl</a></p>`;
+      return res.send(renderHtml('Account confirmed', body));
     } catch (err) {
-      return res.status(500).json({ message: 'Confirmation failed' });
+      return res.status(500).send(renderHtml('Confirmation failed', 'An unexpected error occurred while confirming your account.'));
     }
   });
 
@@ -87,6 +97,28 @@ router.post('/register', async (req, res) => {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function renderHtml(title: string, body: string) {
+    return `<!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width,initial-scale=1" />
+      <title>${escapeHtml(title)}</title>
+      <style>
+        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f7f7f8}
+        .card{background:white;padding:24px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.08);max-width:520px}
+        a{color:#0366d6}
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>${escapeHtml(title)}</h1>
+        <p>${body}</p>
+      </div>
+    </body>
+  </html>`;
   }
 
 router.post('/login', (req, res, next) => {
