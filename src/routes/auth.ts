@@ -78,11 +78,9 @@ router.post('/register', async (req, res) => {
       // Optionally redirect to a frontend confirmation page
       const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
       const message = `Your account (${escapeHtml(email)}) has been confirmed.`;
-      const continueLink = `${appUrl.replace(/\/$/, '')}`;
+      const continueLink = `https://www.salvaramos.cl/ingresar`;
       const salvaramosLink = `https://salvaramos.cl/auth/confirm?token=${encodeURIComponent(token)}`;
-      const body = `${message} <p><a href="${escapeHtml(continueLink)}">Go to app</a></p><p><a href="${escapeHtml(
-        salvaramosLink
-      )}" target="_blank" rel="noopener">Open at salvaramos.cl</a></p>`;
+      const body = `${message} <p><a href="${escapeHtml(continueLink)}">Ir a la aplicación</a></p>`;
       return res.send(renderHtml('Account confirmed', body));
     } catch (err) {
       return res.status(500).send(renderHtml('Confirmation failed', 'An unexpected error occurred while confirming your account.'));
