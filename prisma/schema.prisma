@@ -59,6 +59,7 @@ model Professor {
   name              String
   email             String   @unique
   passwordHash      String
+  confirmed         Boolean  @default(false)
   phone             String?
   rut               String   @unique
   bio               String?
@@ -72,6 +73,7 @@ model Student {
   name         String
   email        String        @unique
   passwordHash String
+  confirmed    Boolean       @default(false)
   phone        String?
   rut          String        @unique
   courses      Course[]

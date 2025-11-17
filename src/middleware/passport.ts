@@ -25,6 +25,10 @@ passport.use(
         const valid = await bcrypt.compare(password, student.passwordHash);
         if (!valid)
           return done(null, false, { message: 'Incorrect password.' });
+        // Ensure the user has confirmed their email
+        if ((student as any).confirmed === false) {
+          return done(null, false, { message: 'Please confirm your email address.' });
+        }
         return done(null, student);
       } catch (err) {
         return done(err);
