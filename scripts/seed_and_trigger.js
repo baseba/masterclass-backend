@@ -59,6 +59,8 @@ async function main() {
       studentsGroup: 'group',
       maxStudents: 10,
       status: 'confirmed',
+      // Ensure scripts create a link even if DB default is not applied
+      link: crypto.randomUUID(),
     },
   });
 

@@ -1436,6 +1436,8 @@ async function main() {
             status,
             minStudents,
             maxStudents,
+            // Ensure seed-dev creates a link when DB default isn't available
+            link: require('crypto').randomUUID(),
           },
         });
         console.log('Slot created:', { classId: classObj.id, startTime });

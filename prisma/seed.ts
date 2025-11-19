@@ -1389,6 +1389,8 @@ async function main() {
                 status,
                 minStudents,
                 maxStudents,
+                // Ensure seed creates a link so seeds don't rely on DB-side gen_random_uuid()
+                link: require('crypto').randomUUID(),
               },
             });
             console.log('Slot created:', {
