@@ -272,6 +272,59 @@ router.put('/:id', authenticateJwt, async (req, res) => {
           );
         }
       }
+      // Notify student when reservation gets cancelled
+      if (final && finalStatus === 'cancelled' && prevStatus !== 'cancelled') {
+        try {
+          const student = final.student as any;
+          const slot = (final.slot as any) || {};
+          const formatChile = (d: any) =>
+            new Date(d).toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+          const when = slot.startTime ? formatChile(slot.startTime) : '';
+
+          const subject = `Reserva cancelada: ${slot.class?.title ?? ''}`;
+          const text = `Hola ${student.name},\n\nTu reserva para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido cancelada.\n\nSi crees que esto es un error, contacta al equipo.`;
+
+          const escapeHtml = (s: string) =>
+            s
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+
+          const html = `
+            <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+              <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+              <p>Hola ${escapeHtml(student.name || 'Estudiante')},</p>
+              <p>Tu reserva para la clase <strong>${escapeHtml(slot.class?.title ?? '')}</strong> programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>cancelada</strong>.</p>
+              <p style="font-size:13px;color:#6b7280;">Si crees que esto es un error, por favor contacta al equipo de soporte.</p>
+            </div>
+          `;
+
+          const sendWithRetry = async (opts: any, attempts = 3) => {
+            let lastErr: any = null;
+            for (let i = 0; i < attempts; i++) {
+              try {
+                return await sendMail(opts);
+              } catch (e) {
+                lastErr = e;
+                const delay = Math.pow(2, i) * 1000;
+                // eslint-disable-next-line no-await-in-loop
+                await new Promise((res) => setTimeout(res, delay));
+              }
+            }
+            throw lastErr;
+          };
+
+          try {
+            await sendWithRetry({ to: student.email, subject, text, html }, 3);
+          } catch (mailErr) {
+            console.warn('Failed to send cancellation email for reservation', id, String(mailErr));
+          }
+        } catch (notifyErr) {
+          console.warn('Error preparing cancellation email', id, String(notifyErr));
+        }
+      }
     } catch (emailErr) {
       console.warn(
         'Error while preparing or sending confirmation email for reservation',

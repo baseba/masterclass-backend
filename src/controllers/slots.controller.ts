@@ -5,6 +5,7 @@ import {
   SlotStudentsGroup,
   SlotStatus,
 } from '@prisma/client';
+import { sendMail } from '../utils/mailer';
 
 const prismaSlot = new PrismaClient().slot;
 const router = Router();
@@ -316,11 +317,92 @@ router.patch('/:id', async (req, res) => {
 // DELETE
 router.delete('/:id', async (req, res) => {
   try {
-    await prismaSlot.delete({
-      where: { id: Number(req.params.id) },
+    const id = Number(req.params.id);
+
+    // Check for existing reservations referencing this slot
+    const slotWithReservations = await prismaSlot.findUnique({
+      where: { id },
+      include: { reservations: { select: { id: true } } },
     });
+    if (!slotWithReservations) return res.status(404).json({ error: 'Slot not found' });
+
+    const reservationCount = slotWithReservations.reservations?.length ?? 0;
+    const force = String(req.query.force || '') === 'true';
+    if (reservationCount > 0 && !force) {
+      return res.status(400).json({
+        error: `Cannot delete slot: ${reservationCount} reservation(s) reference this slot. Add ?force=true to delete reservations and the slot.`,
+      });
+    }
+
+    if (reservationCount > 0 && force) {
+      // Notify students that their reservations will be cancelled, then delete
+      const prisma = new PrismaClient();
+      try {
+        const reservations = await prisma.reservation.findMany({
+          where: { slotId: id },
+          include: { student: true, slot: { include: { class: true } } },
+        });
+
+        const sendWithRetry = async (opts: any, attempts = 3) => {
+          let lastErr: any = null;
+          for (let i = 0; i < attempts; i++) {
+            try {
+              return await sendMail(opts);
+            } catch (e) {
+              lastErr = e;
+              const delay = Math.pow(2, i) * 1000;
+              // eslint-disable-next-line no-await-in-loop
+              await new Promise((res) => setTimeout(res, delay));
+            }
+          }
+          throw lastErr;
+        };
+
+        for (const r of reservations) {
+          try {
+            const student = (r as any).student;
+            const slot = (r as any).slot || {};
+            const formatChile = (d: any) =>
+              new Date(d).toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+            const when = slot.startTime ? formatChile(slot.startTime) : '';
+            const subject = `Reserva cancelada: ${slot.class?.title ?? ''}`;
+            const text = `Hola ${student.name},\n\nLa reserva para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido cancelada por el administrador.\n\nSi crees que esto es un error, contacta al equipo.`;
+            const escapeHtml = (s: string) =>
+              String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            const html = `
+              <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+                <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+                <p>Hola ${escapeHtml(student.name || 'Estudiante')},</p>
+                <p>La reserva para la clase <strong>${escapeHtml(slot.class?.title ?? '')}</strong> programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>cancelada</strong> por el administrador.</p>
+                <p style="font-size:13px;color:#6b7280;">Si crees que esto es un error, por favor contacta al equipo de soporte.</p>
+              </div>
+            `;
+            try {
+              await sendWithRetry({ to: student.email, subject, text, html }, 3);
+            } catch (mailErr) {
+              console.warn('Failed to send cancellation email for reservation', (r as any).id, String(mailErr));
+            }
+          } catch (e) {
+            console.warn('Failed to prepare cancellation email for reservation', (r as any).id, String(e));
+          }
+        }
+
+        // Delete dependent reservations after notifying
+        await prisma.reservation.deleteMany({ where: { slotId: id } });
+      } finally {
+        await prisma.$disconnect();
+      }
+    }
+
+    await prismaSlot.delete({ where: { id } });
     res.status(204).send();
   } catch (error: any) {
+    if (error?.code === 'P2025') return res.status(404).json({ error: 'Slot not found' });
     res.status(400).json({ error: error.message });
   }
 });
