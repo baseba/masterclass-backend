@@ -31,10 +31,10 @@ async function sessionAccessControl(req: any, res: any, next: any) {
 // Create session (class)
 router.post('/', authenticateJwt, sessionAccessControl, async (req, res) => {
   const courseId = Number(req.params.courseId);
-  const { title, description, objectives, orderIndex, basePrice } = req.body;
+  const { title, description, objectives, orderIndex } = req.body;
   try {
     const session = await prisma.class.create({
-      data: { courseId, title, description, objectives, orderIndex, basePrice },
+      data: { courseId, title, description, objectives, orderIndex },
     });
     res.status(201).json(session);
   } catch (err) {
@@ -67,11 +67,11 @@ router.put(
   sessionAccessControl,
   async (req, res) => {
     const sessionId = Number(req.params.sessionId);
-    const { title, description, objectives, orderIndex, basePrice } = req.body;
+    const { title, description, objectives, orderIndex } = req.body;
     try {
       const session = await prisma.class.update({
         where: { id: sessionId },
-        data: { title, description, objectives, orderIndex, basePrice },
+        data: { title, description, objectives, orderIndex },
       });
       res.json(session);
     } catch (err) {

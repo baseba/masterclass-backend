@@ -260,18 +260,16 @@ router.delete(
 // POST /admin/courses/:id/classes - add class to course
 router.post('/:id/classes', authenticateAdmin, async (req, res) => {
   const courseId = Number(req.params.id);
-  const { title, description, objectives, orderIndex, basePrice } =
-    req.body as {
-      title?: string;
-      description?: string;
-      objectives?: string;
-      orderIndex?: number;
-      basePrice?: number;
-    };
-  if (!title || basePrice === undefined || orderIndex === undefined) {
+  const { title, description, objectives, orderIndex } = req.body as {
+    title?: string;
+    description?: string;
+    objectives?: string;
+    orderIndex?: number;
+  };
+  if (!title || orderIndex === undefined) {
     return res
       .status(400)
-      .json({ message: 'title, basePrice and orderIndex are required' });
+      .json({ message: 'title and orderIndex are required' });
   }
   try {
     const newClass = await prisma.class.create({
@@ -281,7 +279,6 @@ router.post('/:id/classes', authenticateAdmin, async (req, res) => {
         description: description ?? '',
         objectives,
         orderIndex,
-        basePrice,
       },
       include: { slots: true, materials: true },
     });

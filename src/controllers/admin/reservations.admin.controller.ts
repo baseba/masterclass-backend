@@ -9,7 +9,7 @@ router.use(authenticateJwt);
 router.use(authenticateAdmin);
 
 router.post('/', async (req, res) => {
-  const { studentId, slotId } = req.body;
+  const { studentId, slotId, pricingPlanId } = req.body;
   if (!studentId) {
     return res.status(401).json({ message: 'Student ID is required' });
   }
@@ -26,14 +26,27 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ message: 'Slot ID is required' });
   }
 
+  if (!pricingPlanId) {
+    return res.status(400).json({ message: 'Pricing Plan ID is required' });
+  }
+
   let txResult = null;
   const slot = await prisma.slot.findUnique({
     where: { id: Number(slotId) },
     include: { class: true },
   });
+
   if (!slot) return res.status(404).json({ message: 'Slot not found' });
 
-  const amount = slot.class?.basePrice ?? 0;
+  const pricingPlan = await prisma.pricingPlan.findUnique({
+    where: { id: Number(pricingPlanId) },
+  });
+
+  if (!pricingPlan) {
+    return res.status(404).json({ message: 'Pricing Plan not found' });
+  }
+
+  const amount = pricingPlan.price;
   txResult = await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.create({
       data: {
@@ -52,6 +65,7 @@ router.post('/', async (req, res) => {
         studentId,
         status: 'pending',
         paymentId: payment.id,
+        pricingPlanId: Number(pricingPlanId),
       },
     });
 

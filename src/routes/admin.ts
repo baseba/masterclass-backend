@@ -6,6 +6,7 @@ import {
   coursesAdminController,
   paymentsAdminController,
   dashboardAdminController,
+  pricingPlansAdminController,
 } from '../controllers/admin';
 
 const router = Router();
@@ -29,5 +30,6 @@ router.post('/login', async (req, res) => {
 router.use('/dashboard', dashboardAdminController);
 router.use('/courses', coursesAdminController);
 router.use('/payments', paymentsAdminController);
+router.use('/pricing-plans', pricingPlansAdminController);
 
 export default router;

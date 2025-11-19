@@ -3,10 +3,8 @@ import { Router } from 'express';
 import prisma from '../../prisma';
 import authenticateAdmin from '../../middleware/authenticateAdmin';
 import authenticateJwt from '../../middleware/authenticateJwt';
-import genTransactionRef from '../../utils/createTransactionRef';
-import { SlotStatus } from '@prisma/client';
+import { SlotStatus, SlotStudentsGroup } from '@prisma/client';
 
-// ...existing code...
 const router = Router();
 
 // GET enrollment info (public)
@@ -22,7 +20,6 @@ router.get('/enroll', async (req, res) => {
       : { acronym: String(courseAcronym) };
     const course = await prisma.course.findFirst({
       where: whereClause,
-      include: courseInclude,
     });
     if (!course) return res.status(404).json({ message: 'Course not found' });
 
@@ -32,18 +29,25 @@ router.get('/enroll', async (req, res) => {
         where: { id: Number(slotId) },
         include: { class: true },
       });
-
-      if (!slot) {
-        return res.status(404).json({ message: 'Slot not found' });
-      }
-
-      if (slot.class.courseId !== course.id) {
-        return res
-          .status(400)
-          .json({ message: 'El slot no pertenece a este curso' });
-      }
     }
-    return res.status(200).json({ course, slot });
+
+    if (!slot) {
+      return res.status(404).json({ message: 'Slot not found' });
+    }
+
+    if (slot.class.courseId !== course.id) {
+      return res
+        .status(400)
+        .json({ message: 'El slot no pertenece a este curso' });
+    }
+
+    const pricingPlanId =
+      slot.studentsGroup === SlotStudentsGroup.private ? 1 : 2;
+    const pricingPlans = await prisma.pricingPlan.findMany({
+      where: { id: pricingPlanId, isActive: true },
+    });
+
+    return res.status(200).json({ course, slot, pricingPlans });
   } catch (err) {
     res
       .status(400)
@@ -145,9 +149,6 @@ router.get('/', async (req, res) => {
 router.get('/:acronym/slots', async (req, res) => {
   try {
     const { acronym } = req.params;
-
-    // Debugging log to check the received acronym
-    console.log('Received acronym:', acronym);
 
     if (!acronym) {
       return res.status(400).json({ message: 'Course acronym is required' });
@@ -270,78 +271,6 @@ router.post('/', authenticateAdmin, async (req, res) => {
       },
     });
     res.status(201).json(course);
-  } catch (err) {
-    res.status(400).json({ message: 'Could not create course', error: err });
-  }
-});
-
-// POST enrollment (authenticated)
-router.post('/enroll', authenticateJwt, async (req, res) => {
-  const studentId = (req.user as any)?.id;
-  if (!studentId) {
-    return res.status(401).json({ message: 'User not authenticated' });
-  }
-  const { courseId, slotId } = req.body;
-  if (!courseId)
-    return res.status(400).json({ message: 'courseId is required' });
-  try {
-    const course = await prisma.course.findUnique({
-      where: { id: Number(courseId) },
-    });
-    if (!course) return res.status(404).json({ message: 'Course not found' });
-
-    const updatedCourse = await prisma.course.update({
-      where: { id: courseId },
-      data: {
-        students: {
-          connect: { id: studentId },
-        },
-      },
-      include: courseInclude,
-    });
-
-    let txResult = null;
-
-    if (slotId) {
-      const slot = await prisma.slot.findUnique({
-        where: { id: Number(slotId) },
-        include: { class: true },
-      });
-      if (!slot) return res.status(404).json({ message: 'Slot not found' });
-
-      const amount = slot.class?.basePrice ?? 0;
-      txResult = await prisma.$transaction(async (tx) => {
-        const payment = await tx.payment.create({
-          data: {
-            studentId,
-            amount,
-            currency: 'CLP',
-            status: 'pending',
-            paymentProvider: 'manual',
-            transactionReference: genTransactionRef(),
-          },
-        });
-
-        const reservation = await tx.reservation.create({
-          data: {
-            slotId: Number(slotId),
-            studentId,
-            status: 'pending',
-            paymentId: payment.id,
-          },
-        });
-
-        return { payment, reservation };
-      });
-    }
-
-    res.status(201).json({
-      course: updatedCourse,
-      ...(txResult && {
-        payment: txResult.payment,
-        reservation: txResult.reservation,
-      }),
-    });
   } catch (err) {
     res.status(400).json({ message: 'Could not create course', error: err });
   }
