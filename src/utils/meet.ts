@@ -69,6 +69,18 @@ export async function ensureMeetLink(slot: any): Promise<string> {
  * This function does not read or write the database and does not rely on `slot.location`.
  */
 export function generateMeetLinkFromSlot(slot: any): string {
+  // Prefer a slot.link value (UUID or room name). If it's already a full URL,
+  // return it as-is. Otherwise treat it as a Jitsi room name (URL-encoded).
+  try {
+    const rawLink = (slot as any).link;
+    if (rawLink) {
+      if (/^https?:\/\//i.test(rawLink)) return String(rawLink);
+      return `https://meet.jit.si/${encodeURIComponent(String(rawLink))}`;
+    }
+  } catch (e) {
+    // ignore and fall back to deterministic slug
+  }
+
   const title = (slot.class && slot.class.title) || 'masterclass';
   const start = slot.startTime ? new Date(slot.startTime) : new Date();
 

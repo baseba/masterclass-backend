@@ -9,12 +9,13 @@ export function signJwt(subject: User | Admin, role: 'user' | 'admin'): string {
 }
 
 // Confirmation tokens for email verification
-export function signConfirmationToken(email: string): string {
+export function signConfirmationToken(email: string, confirmed = false): string {
   const secret = process.env.CONFIRM_TOKEN_SECRET || process.env.JWT_SECRET || 'confirm_secret';
-  return (jwt as any).sign({ email }, secret, { expiresIn: process.env.CONFIRM_TOKEN_EXPIRES || '7d' });
+  const payload = { email, confirmed } as { email: string; confirmed: boolean };
+  return (jwt as any).sign(payload, secret, { expiresIn: process.env.CONFIRM_TOKEN_EXPIRES || '7d' });
 }
 
-export function verifyConfirmationToken(token: string): { email: string } {
+export function verifyConfirmationToken(token: string): { email: string; confirmed?: boolean } {
   const secret = process.env.CONFIRM_TOKEN_SECRET || process.env.JWT_SECRET || 'confirm_secret';
-  return (jwt as any).verify(token, secret) as { email: string };
+  return (jwt as any).verify(token, secret) as { email: string; confirmed?: boolean };
 }

@@ -33,7 +33,7 @@ router.post('/register', async (req, res) => {
 
       // Generate confirmation token and send confirmation email
       try {
-        const token = signConfirmationToken(student.email);
+        const token = signConfirmationToken(student.email, (student as any).confirmed === true);
         const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
         const confirmUrl = `${appUrl.replace(/\/$/, '')}/auth/confirm?token=${encodeURIComponent(
           token

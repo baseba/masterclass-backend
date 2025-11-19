@@ -151,13 +151,25 @@ router.put('/:id', authenticateJwt, async (req, res) => {
         const student = final.student as any;
         const slot = (final.slot as any) || {};
 
-        // Generate deterministic meet link from slot metadata (no need to rely on slot.location)
+        // Prefer a persisted `link` on the slot. If it's not a full URL and a
+        // `MEET_BASE_URL` is configured, compose a URL. Otherwise fall back to
+        // the generated meet link from utils/meet.
         let resolvedMeetLink = '';
         try {
-          const meetUtil = await import('../utils/meet');
-          resolvedMeetLink = meetUtil.generateMeetLinkFromSlot(slot as any);
+          const rawLink = (slot as any).link;
+          if (rawLink) {
+            if (/^https?:\/\//i.test(rawLink)) {
+              resolvedMeetLink = rawLink;
+            } else {
+              // Use Jitsi meet (room = the provided link, typically a UUID)
+              resolvedMeetLink = `https://meet.jit.si/${encodeURIComponent(String(rawLink))}`;
+            }
+          } else {
+            const meetUtil = await import('../utils/meet');
+            resolvedMeetLink = meetUtil.generateMeetLinkFromSlot(slot as any);
+          }
         } catch (meetErr) {
-          console.warn('Meet link generation failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
+          console.warn('Meet link resolution failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
         }
 
         const formatChile = (d: any) =>

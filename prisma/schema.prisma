@@ -1,10 +1,12 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  extensions = [pgcrypto]
 }
 
 // Enums
@@ -114,6 +116,7 @@ model Slot {
   professorId   Int
   startTime     DateTime
   endTime       DateTime
+  link          String            @unique @default(dbgenerated("gen_random_uuid()::text"))
   modality      SlotModality
   studentsGroup SlotStudentsGroup
   location      String?

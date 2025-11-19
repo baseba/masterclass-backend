@@ -43,7 +43,7 @@ passport.use(
           // hasn't confirmed their account yet. Do not block the login flow on
           // email errors - just log them and return the informative message.
           try {
-            const token = signConfirmationToken(student.email);
+            const token = signConfirmationToken(student.email, (student as any).confirmed === true);
             const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
             const confirmUrl = `${appUrl.replace(/\/$/, '')}/auth/confirm?token=${encodeURIComponent(
               token
