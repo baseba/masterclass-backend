@@ -186,9 +186,9 @@ async function main() {
       acronym: 'FIS1512',
       description: `
       Este curso se centra en el estudio del **movimiento y las fuerzas** que lo producen, uno
-       de los pilares de la mecánica clásica. Comenzamos con la **cinemática**, analizando cómo describir trayectorias en distintas 
-       coordenadas —desde el movimiento rectilíneo hasta el circular y curvilíneo en polares y cilíndricas— para luego introducir 
-       las **leyes de Newton**, que permiten modelar la dinámica de partículas mediante diagramas de cuerpo libre, considerando fuerzas 
+       de los pilares de la mecánica clásica. Comenzamos con la **cinemática**, analizando cómo describir trayectorias en distintas
+       coordenadas —desde el movimiento rectilíneo hasta el circular y curvilíneo en polares y cilíndricas— para luego introducir
+       las **leyes de Newton**, que permiten modelar la dinámica de partículas mediante diagramas de cuerpo libre, considerando fuerzas
        como peso, normal, rozamiento, elásticas y tensiones en sistemas con poleas o ligaduras.
       `,
       professors: [professors[0]],
@@ -197,19 +197,19 @@ async function main() {
       title: 'Optimización',
       acronym: 'ICS1113',
       description: `
-        Este curso entrega las bases para formular y resolver problemas de decisión en ingeniería, economía y ciencias aplicadas. 
-        Comienza con la **modelación matemática**, aprendiendo a traducir situaciones reales en funciones objetivo y restricciones, 
+        Este curso entrega las bases para formular y resolver problemas de decisión en ingeniería, economía y ciencias aplicadas.
+        Comienza con la **modelación matemática**, aprendiendo a traducir situaciones reales en funciones objetivo y restricciones,
         y se revisan los fundamentos teóricos que aseguran la validez de los modelos: **existencia de soluciones, convexidad y equivalencias**.
-        
+
         **Contenidos principales:**
-        
+
         - **Modelación Matemática** - Variables de decisión, función objetivo, restricciones y tipos de modelos
         - **Fundamentos Teóricos** - Teorema de Bolzano-Weierstrass, convexidad y condiciones de existencia
         - **Programación Lineal** - Geometría poliédrica, método simplex, análisis postóptimo y dualidad
         - **Programación Entera** - Variables enteras, branch and bound, cortes de Gomory
         - **Optimización No Lineal** - Condiciones de optimalidad, multiplicadores de Lagrange, condiciones KKT
-        
-        El curso combina teoría rigurosa con aplicaciones prácticas, preparando a los estudiantes para resolver problemas 
+
+        El curso combina teoría rigurosa con aplicaciones prácticas, preparando a los estudiantes para resolver problemas
         reales de optimización en contextos industriales, financieros y logísticos.
       `,
       professors: [professors[0]],
@@ -224,17 +224,17 @@ async function main() {
       title: 'Cálculo I',
       acronym: 'MAT1610',
       description: `
-        Cálculo I es una materia fundamental para todas las carreras de ingeniería y ciencias. En este curso desarrollarás 
+        Cálculo I es una materia fundamental para todas las carreras de ingeniería y ciencias. En este curso desarrollarás
         las habilidades necesarias para entender y aplicar los conceptos de límites, continuidad, derivadas e integrales básicas.
-        
+
         **Contenidos principales:**
-        
+
         - **Módulo 1: Límites y Continuidad** - Concepto de límite, cálculo de límites, continuidad y Teorema del Valor Intermedio
         - **Módulo 2: Derivadas** - Definición, interpretación, reglas de derivación y derivación de funciones trascendentes
         - **Módulo 3: Aplicaciones de las Derivadas** - Análisis de funciones, optimización, teoremas fundamentales y L'Hôpital
         - **Módulo 4: Introducción a las Integrales** - Antiderivadas, Teorema Fundamental del Cálculo e integrales definidas
-        
-        Incluye clases teóricas con demostraciones, clases prácticas con ejercicios tipo, apoyo personalizado y recursos 
+
+        Incluye clases teóricas con demostraciones, clases prácticas con ejercicios tipo, apoyo personalizado y recursos
         complementarios como guías progresivas, formularios y simulacros de certámenes.
       `,
       professors: [professors[0]],
