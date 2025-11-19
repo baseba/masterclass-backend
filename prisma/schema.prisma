@@ -116,6 +116,7 @@ model Slot {
   professorId   Int
   startTime     DateTime
   endTime       DateTime
+  // Non-nullable link; migration will backfill existing NULLs and set NOT NULL.
   link          String            @unique @default(dbgenerated("gen_random_uuid()::text"))
   modality      SlotModality
   studentsGroup SlotStudentsGroup

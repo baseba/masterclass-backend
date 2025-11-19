@@ -1374,6 +1374,7 @@ async function main() {
 
           let existing = await prisma.slot.findFirst({
             where: { classId: targetClass.id, startTime },
+            select: { id: true },
           });
 
           if (!existing) {

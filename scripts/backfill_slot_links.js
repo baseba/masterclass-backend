@@ -1,6 +1,13 @@
 #!/usr/bin/env node
+// Load environment variables like other scripts (e.g. trigger_twice.js)
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
+
+// Helpful diagnostic for connection issues
+if (!process.env.DATABASE_URL) {
+  console.warn('Warning: DATABASE_URL not set in environment. Make sure .env exists or export DATABASE_URL.');
+}
 
 (async () => {
   const prisma = new PrismaClient();

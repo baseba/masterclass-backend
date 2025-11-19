@@ -1422,6 +1422,7 @@ async function main() {
           .id;
       let existing = await prisma.slot.findFirst({
         where: { classId: classObj.id, startTime },
+        select: { id: true },
       });
       if (!existing) {
         existing = await prisma.slot.create({
