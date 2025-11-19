@@ -258,6 +258,32 @@ router.put('/:id', authenticateJwt, async (req, res) => {
                 );
               }
             }
+            // Notify all admins
+            try {
+              const admins = await prisma.admin.findMany({ select: { email: true, name: true } });
+              if (admins && admins.length) {
+                const adminSubject = `Reserva confirmada: ${slot.class?.title ?? ''}`;
+                const adminText = `La reserva del estudiante ${student.name} para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido confirmada.`;
+                const adminHtml = `
+                  <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+                    <h2>${escapeHtml(slot.class?.title ?? 'Clase')}</h2>
+                    <p>La reserva del estudiante <strong>${escapeHtml(student.name || '')}</strong> para la clase programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>confirmada</strong>.</p>
+                    <p>Profesor: ${escapeHtml((professor && professor.name) || 'N/A')}</p>
+                    <p><a href="${escapeHtml(resolvedMeetLink)}">Abrir enlace de la reunión</a></p>
+                  </div>
+                `;
+
+                for (const a of admins) {
+                  try {
+                    await sendWithRetry({ to: a.email, subject: adminSubject, text: adminText, html: adminHtml }, 3);
+                  } catch (adminErr) {
+                    console.warn('Failed to send confirmation email to admin', a.email, String(adminErr));
+                  }
+                }
+              }
+            } catch (adminFetchErr) {
+              console.warn('Failed to fetch admins for confirmation notification', String(adminFetchErr));
+            }
           } catch (profErr) {
             console.warn('Error while preparing/sending professor notification', String(profErr));
           }
@@ -332,6 +358,52 @@ router.put('/:id', authenticateJwt, async (req, res) => {
             await sendWithRetry({ to: student.email, subject, text, html }, 3);
           } catch (mailErr) {
             console.warn('Failed to send cancellation email for reservation', id, String(mailErr));
+          }
+          // Notify professor and admins about cancellation
+          try {
+            const professor = (final.slot as any)?.professor as any;
+            const profSubject = `Reserva cancelada: ${slot.class?.title ?? ''}`;
+            const profText = `La reserva del estudiante ${student.name} para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido cancelada.`;
+            const profHtml = `
+              <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+                <h2>${escapeHtml(slot.class?.title ?? 'Clase')}</h2>
+                <p>Hola ${escapeHtml((professor && professor.name) || 'Profesor')},</p>
+                <p>La reserva del estudiante <strong>${escapeHtml(student.name || '')}</strong> para la clase programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>cancelada</strong>.</p>
+              </div>
+            `;
+            if (professor && professor.email) {
+              try {
+                await sendWithRetry({ to: professor.email, subject: profSubject, text: profText, html: profHtml }, 3);
+              } catch (profNotifyErr) {
+                console.warn('Failed to send cancellation email to professor', String(profNotifyErr));
+              }
+            }
+
+            // notify admins
+            try {
+              const admins = await prisma.admin.findMany({ select: { email: true, name: true } });
+              if (admins && admins.length) {
+                const adminSubject = `Reserva cancelada: ${slot.class?.title ?? ''}`;
+                const adminText = `La reserva del estudiante ${student.name} para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido cancelada.`;
+                const adminHtml = `
+                  <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
+                    <h2>${escapeHtml(slot.class?.title ?? 'Clase')}</h2>
+                    <p>La reserva del estudiante <strong>${escapeHtml(student.name || '')}</strong> para la clase programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>cancelada</strong>.</p>
+                  </div>
+                `;
+                for (const a of admins) {
+                  try {
+                    await sendWithRetry({ to: a.email, subject: adminSubject, text: adminText, html: adminHtml }, 3);
+                  } catch (adminErr) {
+                    console.warn('Failed to send cancellation email to admin', a.email, String(adminErr));
+                  }
+                }
+              }
+            } catch (adminFetchErr) {
+              console.warn('Failed to fetch admins for cancellation notification', String(adminFetchErr));
+            }
+          } catch (notifyErr) {
+            console.warn('Error preparing cancellation email', id, String(notifyErr));
           }
         } catch (notifyErr) {
           console.warn('Error preparing cancellation email', id, String(notifyErr));
