@@ -12,8 +12,13 @@ if (!process.env.DATABASE_URL) {
 (async () => {
   const prisma = new PrismaClient();
   try {
-    console.log('Finding slots with null link...');
-    const slots = await prisma.slot.findMany({ where: { link: null }, select: { id: true } });
+    console.log('Finding slots with null link (raw SQL)...');
+    // Use a raw query to find NULL links. The Prisma schema currently marks
+    // `link` as non-nullable, so using the regular client `where: { link: null }`
+    // triggers a validation error. Raw SQL bypasses that validation so we can
+    // backfill the existing NULLs before making the column NOT NULL.
+    const rows = await prisma.$queryRaw`SELECT id FROM "Slot" WHERE link IS NULL;`;
+    const slots = Array.isArray(rows) ? rows.map(r => ({ id: r.id })) : [];
     console.log(`Found ${slots.length} slots to backfill.`);
 
     for (const s of slots) {
