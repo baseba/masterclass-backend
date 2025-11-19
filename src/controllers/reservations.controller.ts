@@ -5,6 +5,50 @@ import { sendMail } from '../utils/mailer';
 import genTransactionRef from '../utils/createTransactionRef';
 const router = Router();
 
+router.get('/enroll', async (req, res) => {
+  const { courseId, courseAcronym, slotId, pricingPlanId } = req.query;
+  if (!courseAcronym && !courseId)
+    return res
+      .status(400)
+      .json({ message: 'courseAcronym or courseId are required' });
+  try {
+    const whereClause = courseId
+      ? { id: Number(courseId) }
+      : { acronym: String(courseAcronym) };
+    const course = await prisma.course.findFirst({
+      where: whereClause,
+    });
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    let slot = null;
+    if (slotId) {
+      slot = await prisma.slot.findUnique({
+        where: { id: Number(slotId) },
+        include: { class: true },
+      });
+    }
+
+    if (!slot) {
+      return res.status(404).json({ message: 'Slot not found' });
+    }
+
+    if (slot.class.courseId !== course.id) {
+      return res
+        .status(400)
+        .json({ message: 'El slot no pertenece a este curso' });
+    }
+
+    const pricingPlan = await prisma.pricingPlan.findUnique({
+      where: { id: Number(pricingPlanId), isActive: true },
+    });
+
+    return res.status(200).json({ course, slot, pricingPlan });
+  } catch (err) {
+    res
+      .status(400)
+      .json({ message: 'Error fetching enrollment info', error: err });
+  }
+});
 // Create reservation
 router.post('/', authenticateJwt, async (req, res) => {
   const studentId = (req.user as any)?.id;
@@ -12,10 +56,14 @@ router.post('/', authenticateJwt, async (req, res) => {
     return res.status(401).json({ message: 'User not authenticated' });
   }
 
-  const { slotId } = req.body;
+  const { slotId, pricingPlanId } = req.body;
 
   if (!slotId) {
     return res.status(400).json({ message: 'slotId is required' });
+  }
+
+  if (!pricingPlanId) {
+    return res.status(400).json({ message: 'pricingPlanId is required' });
   }
 
   let txResult = null;
@@ -25,7 +73,14 @@ router.post('/', authenticateJwt, async (req, res) => {
   });
   if (!slot) return res.status(404).json({ message: 'Slot not found' });
 
-  const amount = slot.class?.basePrice ?? 0;
+  const pricingPlan = await prisma.pricingPlan.findUnique({
+    where: { id: Number(pricingPlanId) },
+  });
+
+  if (!pricingPlan) {
+    return res.status(404).json({ message: 'Pricing Plan not found' });
+  }
+  const amount = pricingPlan.price;
   txResult = await prisma.$transaction(async (tx) => {
     const payment = await tx.payment.create({
       data: {
@@ -44,6 +99,7 @@ router.post('/', authenticateJwt, async (req, res) => {
         studentId,
         status: 'pending',
         paymentId: payment.id,
+        pricingPlanId: Number(pricingPlanId),
       },
     });
 
@@ -138,7 +194,10 @@ router.put('/:id', authenticateJwt, async (req, res) => {
     try {
       const final = await prisma.reservation.findUnique({
         where: { id },
-        include: { student: true, slot: { include: { class: true, professor: true } } },
+        include: {
+          student: true,
+          slot: { include: { class: true, professor: true } },
+        },
       });
       const finalStatus = final?.status;
       const alreadyNotified = (final as any)?.notificationSentAt;
@@ -162,14 +221,23 @@ router.put('/:id', authenticateJwt, async (req, res) => {
               resolvedMeetLink = rawLink;
             } else {
               // Use Jitsi meet (room = the provided link, typically a UUID)
-              resolvedMeetLink = `https://meet.jit.si/${encodeURIComponent(String(rawLink))}`;
+              resolvedMeetLink = `https://meet.jit.si/${encodeURIComponent(
+                String(rawLink)
+              )}`;
             }
           } else {
             const meetUtil = await import('../utils/meet');
             resolvedMeetLink = meetUtil.generateMeetLinkFromSlot(slot as any);
           }
         } catch (meetErr) {
-          console.warn('Meet link resolution failed for reservation email, proceeding without link', (meetErr as any)?.message || meetErr);
+          console.warn(
+            'Meet link generation failed for reservation email, proceeding without link',
+            (meetErr as any)?.message || meetErr
+          );
+          console.warn(
+            'Meet link resolution failed for reservation email, proceeding without link',
+            (meetErr as any)?.message || meetErr
+          );
         }
 
         const formatChile = (d: any) =>
@@ -177,7 +245,11 @@ router.put('/:id', authenticateJwt, async (req, res) => {
 
         const subject = `Confirmación de reserva: ${slot.class?.title ?? ''}`;
         const when = slot.startTime ? formatChile(slot.startTime) : '';
-        const text = `Hola ${student.name},\n\nTu reserva para la clase "${slot.class?.title ?? ''}" ha sido confirmada.\nFecha y hora: ${when}\n\nEnlace de la reunión: ${resolvedMeetLink || ''}\n\n¡Nos vemos en clase!`;
+        const text = `Hola ${student.name},\n\nTu reserva para la clase "${
+          slot.class?.title ?? ''
+        }" ha sido confirmada.\nFecha y hora: ${when}\n\nEnlace de la reunión: ${
+          resolvedMeetLink || ''
+        }\n\n¡Nos vemos en clase!`;
 
         const escapeHtml = (s: string) =>
           s
@@ -198,13 +270,21 @@ router.put('/:id', authenticateJwt, async (req, res) => {
 
         const html = `
           <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
-            <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+            <h2 style="margin-bottom:6px;">${escapeHtml(
+              slot.class?.title ?? 'Tu clase'
+            )}</h2>
             <p>Hola ${escapeHtml(student.name || 'Estudiante')},</p>
-            <p>Tu reserva ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(when)}</strong>.</p>
+            <p>Tu reserva ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(
+              when
+            )}</strong>.</p>
             <p>
-              <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Unirse a la reunión</a>
+              <a href="${escapeHtml(
+                resolvedMeetLink
+              )}" style="display:inline-block;padding:12px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Unirse a la reunión</a>
             </p>
-            <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
+            <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(
+              resolvedMeetLink
+            )}">${escapeHtml(urlHost)}</a></p>
             <hr style="border:none;border-top:1px solid #e5e7eb;margin:18px 0;" />
             <p style="font-size:13px;color:#6b7280;">Si no puedes asistir, por favor cancela la reserva.</p>
             <p style="font-size:13px;color:#6b7280;">¡Nos vemos!</p>
@@ -233,23 +313,49 @@ router.put('/:id', authenticateJwt, async (req, res) => {
           try {
             const professor = (final.slot as any)?.professor as any;
             if (professor && professor.email) {
-              const profSubject = `Reserva confirmada: ${slot.class?.title ?? ''}`;
-              const profText = `Hola ${professor.name || 'Profesor'},\n\nLa reserva del estudiante ${student.name} para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido confirmada.\n\nEnlace de la reunión: ${resolvedMeetLink || ''}\n\nSaludos.`;
+              const profSubject = `Reserva confirmada: ${
+                slot.class?.title ?? ''
+              }`;
+              const profText = `Hola ${
+                professor.name || 'Profesor'
+              },\n\nLa reserva del estudiante ${student.name} para la clase "${
+                slot.class?.title ?? ''
+              }" programada para ${when} ha sido confirmada.\n\nEnlace de la reunión: ${
+                resolvedMeetLink || ''
+              }\n\nSaludos.`;
 
               const profHtml = `
                 <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
-                  <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+                  <h2 style="margin-bottom:6px;">${escapeHtml(
+                    slot.class?.title ?? 'Tu clase'
+                  )}</h2>
                   <p>Hola ${escapeHtml(professor.name || 'Profesor')},</p>
-                  <p>La reserva del estudiante <strong>${escapeHtml(student.name || '')}</strong> para tu clase ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(when)}</strong>.</p>
+                  <p>La reserva del estudiante <strong>${escapeHtml(
+                    student.name || ''
+                  )}</strong> para tu clase ha sido <strong>confirmada</strong> para el <strong>${escapeHtml(
+                when
+              )}</strong>.</p>
                   <p>
-                    <a href="${escapeHtml(resolvedMeetLink)}" style="display:inline-block;padding:12px 18px;background:#10b981;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Abrir enlace de la reunión</a>
+                    <a href="${escapeHtml(
+                      resolvedMeetLink
+                    )}" style="display:inline-block;padding:12px 18px;background:#10b981;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Abrir enlace de la reunión</a>
                   </p>
-                  <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(resolvedMeetLink)}">${escapeHtml(urlHost)}</a></p>
+                  <p style="color:#6b7280;font-size:13px;">O ábrelo en tu navegador: <a href="${escapeHtml(
+                    resolvedMeetLink
+                  )}">${escapeHtml(urlHost)}</a></p>
                 </div>
               `;
 
               try {
-                await sendWithRetry({ to: professor.email, subject: profSubject, text: profText, html: profHtml }, 3);
+                await sendWithRetry(
+                  {
+                    to: professor.email,
+                    subject: profSubject,
+                    text: profText,
+                    html: profHtml,
+                  },
+                  3
+                );
               } catch (profMailErr) {
                 console.warn(
                   'Failed to send confirmation email to professor for reservation',
@@ -259,7 +365,10 @@ router.put('/:id', authenticateJwt, async (req, res) => {
               }
             }
           } catch (profErr) {
-            console.warn('Error while preparing/sending professor notification', String(profErr));
+            console.warn(
+              'Error while preparing/sending professor notification',
+              String(profErr)
+            );
           }
 
           // mark reservation as notified
@@ -290,11 +399,15 @@ router.put('/:id', authenticateJwt, async (req, res) => {
           const student = final.student as any;
           const slot = (final.slot as any) || {};
           const formatChile = (d: any) =>
-            new Date(d).toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+            new Date(d).toLocaleString('es-CL', {
+              timeZone: 'America/Santiago',
+            });
           const when = slot.startTime ? formatChile(slot.startTime) : '';
 
           const subject = `Reserva cancelada: ${slot.class?.title ?? ''}`;
-          const text = `Hola ${student.name},\n\nTu reserva para la clase "${slot.class?.title ?? ''}" programada para ${when} ha sido cancelada.\n\nSi crees que esto es un error, contacta al equipo.`;
+          const text = `Hola ${student.name},\n\nTu reserva para la clase "${
+            slot.class?.title ?? ''
+          }" programada para ${when} ha sido cancelada.\n\nSi crees que esto es un error, contacta al equipo.`;
 
           const escapeHtml = (s: string) =>
             s
@@ -306,9 +419,15 @@ router.put('/:id', authenticateJwt, async (req, res) => {
 
           const html = `
             <div style="font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; color:#111;">
-              <h2 style="margin-bottom:6px;">${escapeHtml(slot.class?.title ?? 'Tu clase')}</h2>
+              <h2 style="margin-bottom:6px;">${escapeHtml(
+                slot.class?.title ?? 'Tu clase'
+              )}</h2>
               <p>Hola ${escapeHtml(student.name || 'Estudiante')},</p>
-              <p>Tu reserva para la clase <strong>${escapeHtml(slot.class?.title ?? '')}</strong> programada para <strong>${escapeHtml(when)}</strong> ha sido <strong>cancelada</strong>.</p>
+              <p>Tu reserva para la clase <strong>${escapeHtml(
+                slot.class?.title ?? ''
+              )}</strong> programada para <strong>${escapeHtml(
+            when
+          )}</strong> ha sido <strong>cancelada</strong>.</p>
               <p style="font-size:13px;color:#6b7280;">Si crees que esto es un error, por favor contacta al equipo de soporte.</p>
             </div>
           `;
@@ -331,10 +450,18 @@ router.put('/:id', authenticateJwt, async (req, res) => {
           try {
             await sendWithRetry({ to: student.email, subject, text, html }, 3);
           } catch (mailErr) {
-            console.warn('Failed to send cancellation email for reservation', id, String(mailErr));
+            console.warn(
+              'Failed to send cancellation email for reservation',
+              id,
+              String(mailErr)
+            );
           }
         } catch (notifyErr) {
-          console.warn('Error preparing cancellation email', id, String(notifyErr));
+          console.warn(
+            'Error preparing cancellation email',
+            id,
+            String(notifyErr)
+          );
         }
       }
     } catch (emailErr) {
