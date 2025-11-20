@@ -1,5 +1,6 @@
 import { PrismaClient, SlotStudentsGroup, SlotModality } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { execSync } from 'child_process';
 
 const prisma = new PrismaClient();
 
@@ -140,6 +141,28 @@ async function main() {
   }
 
   // Pricing Plans
+  // Ensure the PricingPlan table exists. In some deployment environments (Render)
+  // migrations may not have been applied before the seed runs; detect the
+  // absence of the table and run `prisma migrate deploy` so the seed can proceed.
+  try {
+    // to_regclass returns NULL if the table does not exist
+    const tableCheck: any = await prisma.$queryRaw`SELECT to_regclass('public."PricingPlan"') as tbl`;
+    const tbl = Array.isArray(tableCheck) && tableCheck[0] ? tableCheck[0].tbl : tableCheck?.tbl;
+    if (!tbl) {
+      console.log('PricingPlan table not found — running migrations (prisma migrate deploy)...');
+      try {
+        execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+        console.log('Migrations applied successfully.');
+      } catch (err) {
+        console.error('Failed to run migrations automatically:', err);
+        throw err;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not determine PricingPlan table existence:', err);
+    // If the check fails for any reason, we'll proceed and let Prisma surface
+    // the error (so CI / build logs show the root cause). Do not swallow.
+  }
   const pricingPlansData = [
     {
       name: 'Clase particular',
