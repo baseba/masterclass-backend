@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import {
   PrismaClient,
   SlotModality,
@@ -68,6 +69,14 @@ router.post('/', async (req, res) => {
       studentsGroup: mapEnum(SlotStudentsGroup, req.body.studentsGroup),
       status: mapEnum(SlotStatus, req.body.status),
     };
+    // Generate server-side `link` (UUID) and ignore any client-supplied value.
+    try {
+      (data as any).link = randomUUID();
+    } catch (e) {
+      // If randomUUID isn't available for some reason, remove any client value
+      // and allow DB default to take effect.
+      delete (data as any).link;
+    }
     // Basic validations
     if (data.endTime <= data.startTime)
       throw new Error(`'endTime' must be after 'startTime'`);
@@ -184,6 +193,8 @@ router.patch('/:id', async (req, res) => {
       'class',
       'courseId',
       'course',
+      // Prevent clients from changing the slot `link`.
+      'link',
     ];
     const attemptedForbidden = Object.keys(req.body).filter((k) =>
       forbiddenFields.includes(k)
