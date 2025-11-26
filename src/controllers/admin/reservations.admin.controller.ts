@@ -1,12 +1,7 @@
 import { Router } from 'express';
-import authenticateJwt from '../../middleware/authenticateJwt';
-import authenticateAdmin from '../../middleware/authenticateAdmin';
 import prisma from '../../prisma';
 import genTransactionRef from '../../utils/createTransactionRef';
 const router = Router();
-
-router.use(authenticateJwt);
-router.use(authenticateAdmin);
 
 router.post('/', async (req, res) => {
   const { studentId, slotId, pricingPlanId } = req.body;

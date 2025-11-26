@@ -11,7 +11,8 @@ import studentRouter from './routes/student/students';
 import slotRouter from './controllers/slots.controller';
 import reservationRouter from './controllers/reservations.controller';
 import cronjobsController from './controllers/cronjobs.controller';
-
+import authenticateJwt from './middleware/authenticateJwt';
+import authenticateAdmin from './middleware/authenticateAdmin';
 const allowedOrigins = [
   'http://localhost:4321',
   'https://masterclass-frontend.vercel.app',
@@ -32,6 +33,8 @@ app.use(passport.initialize());
 const SENSITIVE_KEYS = new Set(
   [
     'password',
+    'currentPassword',
+    'newPassword',
     'passwordhash',
     'confirmed_password',
     'confirmpassword',
@@ -77,15 +80,6 @@ app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 );
 
-app.use('/auth', authRouter);
-app.use('/admin', adminRouter);
-app.use('/professors', professorRouter);
-app.use('/courses', courseRouter);
-app.use('/students', studentRouter);
-app.use('/slots', slotRouter);
-app.use('/reservations', reservationRouter);
-app.use('/cron', cronjobsController);
-
 app.get('/ping', (req, res) => {
   res.json({
     message: 'pong',
@@ -94,5 +88,19 @@ app.get('/ping', (req, res) => {
     uptime: `${Math.floor(process.uptime())} seconds`,
   });
 });
+
+app.use('/auth', authRouter);
+
+app.use(authenticateJwt);
+app.use('/professors', professorRouter);
+app.use('/courses', courseRouter);
+app.use('/students', studentRouter);
+app.use('/slots', slotRouter);
+app.use('/reservations', reservationRouter);
+app.use('/cron', cronjobsController);
+
+app.use(authenticateAdmin);
+
+app.use('/admin', adminRouter);
 
 export default app;
