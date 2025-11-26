@@ -1,13 +1,9 @@
 import { Router } from 'express';
 import prisma from '../../prisma';
-import authenticateAdmin from '../../middleware/authenticateAdmin';
 import { parsePagination } from '../helpers/parsePagination';
-
-// Admin Pricing Plans Router
 const router = Router();
 
-// GET /admin/pricing-plans - list all pricing plans with pagination
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { page, pageSize, skip, take } = parsePagination(req.query);
 
@@ -50,7 +46,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
 });
 
 // GET /admin/pricing-plans/:id - get full detail of a pricing plan
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
@@ -68,7 +64,7 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
 });
 
 // POST /admin/pricing-plans - create new pricing plan
-router.post('/', authenticateAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   const {
     name,
     description,
@@ -108,7 +104,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 });
 
 // PUT /admin/pricing-plans/:id - update pricing plan
-router.put('/:id', authenticateAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { name, description, price, isActive, classCount, classIds } =
     req.body as {
@@ -149,7 +145,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE /admin/pricing-plans/:id - delete pricing plan
-router.delete('/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid id' });
 

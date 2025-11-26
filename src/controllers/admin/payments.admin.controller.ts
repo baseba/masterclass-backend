@@ -1,13 +1,8 @@
 import { Router } from 'express';
-import authenticateJwt from '../../middleware/authenticateJwt';
-import authenticateAdmin from '../../middleware/authenticateAdmin';
 import prisma from '../../prisma';
 import { parsePagination } from '../helpers/parsePagination';
 
 const router = Router();
-
-router.use(authenticateJwt);
-router.use(authenticateAdmin);
 
 router.get('/', async (req, res) => {
   try {

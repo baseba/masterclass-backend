@@ -30,7 +30,62 @@ function buildProfessorWhere(query: any): any {
   return where;
 }
 
-// List professors with filters and pagination
+router.get('/me', async (req, res) => {
+  const userId = (req as any).user.id;
+  try {
+    const user = await prisma.professor.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        rut: true,
+        bio: true,
+        profilePictureUrl: true,
+      },
+    });
+    res.json(user);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: 'Failed to retrieve professor', error: err });
+  }
+});
+
+router.put('/me', async (req, res) => {
+  try {
+    const userId = (req as any).user.id;
+    const { name, email, rut, bio } = req.body as {
+      name?: string;
+      email?: string;
+      rut?: string;
+      bio?: string;
+    };
+
+    const data: any = { name, email, rut, bio };
+
+    const professor = await prisma.professor.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        rut: true,
+        bio: true,
+        profilePictureUrl: true,
+      },
+    });
+    res.json(professor);
+  } catch (err) {
+    res
+      .status(404)
+      .json({ message: 'professor not found or update failed', error: err });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     const { page, pageSize, skip, take } = parsePagination(req.query);

@@ -17,8 +17,13 @@ function escapeHtml(str: string) {
 }
 
 passport.use(
+  'local-student',
   new LocalStrategy(
-    { usernameField: 'email', passwordField: 'password', passReqToCallback: true },
+    {
+      usernameField: 'email',
+      passwordField: 'password',
+      passReqToCallback: true,
+    },
     async (
       req: any,
       email: string,
@@ -28,41 +33,98 @@ passport.use(
       try {
         const student = await prisma.student.findUnique({ where: { email } });
         if (!student) return done(null, false, { message: 'Incorrect email.' });
-        // Ensure passwordHash is present (Prisma schema defines it as required,
-        // but the generated types may still allow null in certain setups). Do
-        // a runtime check to satisfy TypeScript and avoid passing null to
-        // bcrypt.compare which expects a string.
         if (student.passwordHash == null)
           return done(null, false, { message: 'No password set for user.' });
         const valid = await bcrypt.compare(password, student.passwordHash);
         if (!valid)
           return done(null, false, { message: 'Incorrect password.' });
-        // Ensure the user has confirmed their email
         if ((student as any).confirmed === false) {
-          // Attempt to resend confirmation email when a user tries to login but
-          // hasn't confirmed their account yet. Do not block the login flow on
-          // email errors - just log them and return the informative message.
           try {
-            const token = signConfirmationToken(student.email, (student as any).confirmed === true);
-            const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-            const confirmUrl = `${appUrl.replace(/\/$/, '')}/auth/confirm?token=${encodeURIComponent(
-              token
-            )}`;
+            const token = signConfirmationToken(
+              student.email,
+              (student as any).confirmed === true
+            );
+            const appUrl =
+              process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+            const confirmUrl = `${appUrl.replace(
+              /\/$/,
+              ''
+            )}/auth/confirm?token=${encodeURIComponent(token)}`;
             const subject = 'Confirma tu cuenta';
-            const text = `Hola ${student.name || ''},\n\nPor favor confirma tu cuenta usando este enlace: ${confirmUrl}\n\nSi no solicitaste esto, ignora este correo.`;
-            const html = `<p>Hola ${escapeHtml(student.name || '')},</p><p>Por favor confirma tu cuenta usando este enlace:</p><p><a href="${escapeHtml(
+            const text = `Hola ${
+              student.name || ''
+            },\n\nPor favor confirma tu cuenta usando este enlace: ${confirmUrl}\n\nSi no solicitaste esto, ignora este correo.`;
+            const html = `<p>Hola ${escapeHtml(
+              student.name || ''
+            )},</p><p>Por favor confirma tu cuenta usando este enlace:</p><p><a href="${escapeHtml(
               confirmUrl
             )}">Confirmar cuenta</a></p>`;
             await sendMail({ to: student.email, subject, text, html });
           } catch (err) {
-            console.error('Failed to resend confirmation email on login attempt', err);
+            console.error(
+              'Failed to resend confirmation email on login attempt',
+              err
+            );
           }
           return done(null, false, {
             message:
               'Please confirm your email address. A confirmation link was (re)sent to your email.',
           });
         }
-        return done(null, student);
+        return done(null, { ...student, role: 'user' });
+      } catch (err) {
+        return done(err);
+      }
+    }
+  )
+);
+
+passport.use(
+  'local-admin',
+  new LocalStrategy(
+    { usernameField: 'email', passwordField: 'password' },
+    async (
+      email: string,
+      password: string,
+      done: (error: any, user?: any, info?: any) => void
+    ) => {
+      try {
+        const admin = await prisma.admin.findUnique({ where: { email } });
+        if (!admin) return done(null, false, { message: 'Incorrect email.' });
+        if (admin.passwordHash == null)
+          return done(null, false, { message: 'No password set for user.' });
+        const valid = await bcrypt.compare(password, admin.passwordHash);
+        if (!valid)
+          return done(null, false, { message: 'Incorrect password.' });
+        return done(null, { ...admin, role: 'admin' });
+      } catch (err) {
+        return done(err);
+      }
+    }
+  )
+);
+
+passport.use(
+  'local-professor',
+  new LocalStrategy(
+    { usernameField: 'email', passwordField: 'password' },
+    async (
+      email: string,
+      password: string,
+      done: (error: any, user?: any, info?: any) => void
+    ) => {
+      try {
+        const professor = await prisma.professor.findUnique({
+          where: { email },
+        });
+        if (!professor)
+          return done(null, false, { message: 'Incorrect email.' });
+        if (professor.passwordHash == null)
+          return done(null, false, { message: 'No password set for user.' });
+        const valid = await bcrypt.compare(password, professor.passwordHash);
+        if (!valid)
+          return done(null, false, { message: 'Incorrect password.' });
+        return done(null, { ...professor, role: 'professor' });
       } catch (err) {
         return done(err);
       }
@@ -87,6 +149,12 @@ passport.use(
           });
           if (!admin) return done(null, false);
           return done(null, { ...admin, role: 'admin' });
+        } else if (payload.role === 'professor') {
+          const professor = await prisma.professor.findUnique({
+            where: { id: payload.id },
+          });
+          if (!professor) return done(null, false);
+          return done(null, { ...professor, role: 'professor' });
         } else {
           const student = await prisma.student.findUnique({
             where: { id: payload.id },

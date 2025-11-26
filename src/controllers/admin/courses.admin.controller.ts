@@ -1,13 +1,9 @@
 import { Router } from 'express';
 import prisma from '../../prisma';
-import authenticateAdmin from '../../middleware/authenticateAdmin';
 import { Prisma } from '@prisma/client';
 import { parsePagination } from '../helpers/parsePagination';
-
-// Admin Courses Router
 const router = Router();
 
-// Helper include for full course detail
 const fullCourseInclude = {
   professors: true,
   students: true,
@@ -29,7 +25,7 @@ const fullCourseInclude = {
 } as const;
 
 // GET /admin/courses - consolidated index
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { page, pageSize, skip, take } = parsePagination(req.query);
 
@@ -76,7 +72,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
 });
 
 // GET /admin/courses/:id - full detail
-router.get('/:id', authenticateAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
@@ -92,7 +88,7 @@ router.get('/:id', authenticateAdmin, async (req, res) => {
 });
 
 // POST /admin/courses - create course
-router.post('/', authenticateAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   const {
     title,
     acronym,
@@ -129,7 +125,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
 });
 
 // PUT /admin/courses/:id - update course
-router.put('/:id', authenticateAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   const id = Number(req.params.id);
   const { title, acronym, description, isActive, professorIds } = req.body as {
     title?: string;
@@ -165,7 +161,7 @@ router.put('/:id', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE /admin/courses/:id - delete course with cascade cleanup
-router.delete('/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const id = Number(req.params.id);
   if (Number.isNaN(id)) return res.status(400).json({ message: 'Invalid id' });
   try {
@@ -203,7 +199,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 });
 
 // POST /admin/courses/:id/students - add student to course
-router.post('/:id/students', authenticateAdmin, async (req, res) => {
+router.post('/:id/students', async (req, res) => {
   const id = Number(req.params.id);
   const { studentId } = req.body as { studentId?: number };
   if (!studentId)
@@ -221,44 +217,40 @@ router.post('/:id/students', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE /admin/courses/:id/students/:studentId - remove student from course and their reservations in this course
-router.delete(
-  '/:id/students/:studentId',
-  authenticateAdmin,
-  async (req, res) => {
-    const id = Number(req.params.id);
-    const studentId = Number(req.params.studentId);
-    if (Number.isNaN(id) || Number.isNaN(studentId))
-      return res.status(400).json({ message: 'Invalid id' });
-    try {
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        // Find slot ids for this course
-        const classes = await tx.class.findMany({
-          where: { courseId: id },
-          select: { slots: { select: { id: true } } },
-        });
-        const slotIds = classes.flatMap((c: { slots: { id: number }[] }) =>
-          c.slots.map((s: { id: number }) => s.id)
-        );
-        if (slotIds.length) {
-          await tx.reservation.deleteMany({
-            where: { slotId: { in: slotIds }, studentId },
-          });
-        }
-        // Disconnect from course
-        await tx.course.update({
-          where: { id },
-          data: { students: { disconnect: { id: studentId } } },
-        });
+router.delete('/:id/students/:studentId', async (req, res) => {
+  const id = Number(req.params.id);
+  const studentId = Number(req.params.studentId);
+  if (Number.isNaN(id) || Number.isNaN(studentId))
+    return res.status(400).json({ message: 'Invalid id' });
+  try {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Find slot ids for this course
+      const classes = await tx.class.findMany({
+        where: { courseId: id },
+        select: { slots: { select: { id: true } } },
       });
-      res.status(204).send();
-    } catch (err) {
-      res.status(400).json({ message: 'Could not remove student', error: err });
-    }
+      const slotIds = classes.flatMap((c: { slots: { id: number }[] }) =>
+        c.slots.map((s: { id: number }) => s.id)
+      );
+      if (slotIds.length) {
+        await tx.reservation.deleteMany({
+          where: { slotId: { in: slotIds }, studentId },
+        });
+      }
+      // Disconnect from course
+      await tx.course.update({
+        where: { id },
+        data: { students: { disconnect: { id: studentId } } },
+      });
+    });
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ message: 'Could not remove student', error: err });
   }
-);
+});
 
 // POST /admin/courses/:id/classes - add class to course
-router.post('/:id/classes', authenticateAdmin, async (req, res) => {
+router.post('/:id/classes', async (req, res) => {
   const courseId = Number(req.params.id);
   const { title, description, objectives, orderIndex } = req.body as {
     title?: string;
@@ -289,7 +281,7 @@ router.post('/:id/classes', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE /admin/courses/:id/classes/:classId - delete class and its slots/reservations
-router.delete('/:id/classes/:classId', authenticateAdmin, async (req, res) => {
+router.delete('/:id/classes/:classId', async (req, res) => {
   const classId = Number(req.params.classId);
   if (Number.isNaN(classId))
     return res.status(400).json({ message: 'Invalid classId' });
@@ -314,7 +306,7 @@ router.delete('/:id/classes/:classId', authenticateAdmin, async (req, res) => {
 });
 
 // POST /admin/courses/:id/professors - assign professor to course
-router.post('/:id/professors', authenticateAdmin, async (req, res) => {
+router.post('/:id/professors', async (req, res) => {
   const id = Number(req.params.id);
   const { professorId } = req.body as { professorId?: number };
   if (!professorId)
@@ -332,34 +324,27 @@ router.post('/:id/professors', authenticateAdmin, async (req, res) => {
 });
 
 // DELETE /admin/courses/:id/professors/:professorId - remove professor from course
-router.delete(
-  '/:id/professors/:professorId',
-  authenticateAdmin,
-  async (req, res) => {
-    const id = Number(req.params.id);
-    const professorId = Number(req.params.professorId);
-    if (Number.isNaN(id) || Number.isNaN(professorId))
-      return res.status(400).json({ message: 'Invalid id' });
-    try {
-      await prisma.course.update({
-        where: { id },
-        data: { professors: { disconnect: { id: professorId } } },
-      });
-      res.status(204).send();
-    } catch (err) {
-      res
-        .status(400)
-        .json({ message: 'Could not remove professor', error: err });
-    }
+router.delete('/:id/professors/:professorId', async (req, res) => {
+  const id = Number(req.params.id);
+  const professorId = Number(req.params.professorId);
+  if (Number.isNaN(id) || Number.isNaN(professorId))
+    return res.status(400).json({ message: 'Invalid id' });
+  try {
+    await prisma.course.update({
+      where: { id },
+      data: { professors: { disconnect: { id: professorId } } },
+    });
+    res.status(204).send();
+  } catch (err) {
+    res.status(400).json({ message: 'Could not remove professor', error: err });
   }
-);
+});
 
 export default router;
 
 // REMOVE student from a specific class (all reservations in that class)
 router.delete(
   '/:courseId/classes/:classId/students/:studentId',
-  authenticateAdmin,
   async (req, res) => {
     const courseId = Number(req.params.courseId);
     const classId = Number(req.params.classId);
@@ -395,7 +380,6 @@ router.delete(
 // REMOVE student from a specific slot (reservation)
 router.delete(
   '/:courseId/slots/:slotId/students/:studentId',
-  authenticateAdmin,
   async (req, res) => {
     const courseId = Number(req.params.courseId);
     const slotId = Number(req.params.slotId);

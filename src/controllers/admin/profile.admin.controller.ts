@@ -6,39 +6,33 @@ const router = Router();
 router.get('/me', async (req, res) => {
   const userId = (req as any).user.id;
   try {
-    const user = await prisma.student.findUnique({
+    const user = await prisma.admin.findUnique({
       where: { id: userId },
       select: {
         id: true,
         name: true,
         email: true,
-        phone: true,
         rut: true,
-        address: true,
       },
     });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to retrieve student', error: err });
+    res.status(500).json({ message: 'Failed to retrieve admin', error: err });
   }
 });
 
 router.put('/me', async (req, res) => {
   try {
     const userId = (req as any).user.id;
-    const { name, email, password, rut, phone, address } = req.body as {
+    const { name, email, rut } = req.body as {
       name?: string;
       email?: string;
-      password?: string;
       rut?: string;
-      phone?: string;
-      address?: string;
     };
 
-    const data: any = { name, email, rut, phone, address };
-    if (password) data.passwordHash = await bcrypt.hash(password, 10);
+    const data: any = { name, email, rut };
 
-    const student = await prisma.student.update({
+    const admin = await prisma.admin.update({
       where: { id: userId },
       data,
       select: {
@@ -46,15 +40,13 @@ router.put('/me', async (req, res) => {
         name: true,
         email: true,
         rut: true,
-        phone: true,
-        address: true,
       },
     });
-    res.json(student);
+    res.json(admin);
   } catch (err) {
     res
       .status(404)
-      .json({ message: 'Student not found or update failed', error: err });
+      .json({ message: 'admin not found or update failed', error: err });
   }
 });
 
