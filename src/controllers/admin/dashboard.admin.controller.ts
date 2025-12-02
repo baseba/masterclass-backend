@@ -1,12 +1,6 @@
 import { Router } from 'express';
-import authenticateJwt from '../../middleware/authenticateJwt';
-import authenticateAdmin from '../../middleware/authenticateAdmin';
 import prisma from '../../prisma';
-
 const router = Router();
-
-router.use(authenticateJwt);
-router.use(authenticateAdmin);
 
 // GET /admin/dashboard - Dashboard statistics
 router.get('/', async (req, res) => {
