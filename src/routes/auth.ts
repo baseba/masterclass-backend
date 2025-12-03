@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import passport from '../middleware/passport';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import prisma from '../prisma';
 import {
   signJwt,
@@ -8,6 +9,7 @@ import {
   verifyConfirmationToken,
 } from '../utils/jwt';
 import { sendMail } from '../utils/mailer';
+import { IAccountType } from '../types';
 
 const router = Router();
 
@@ -167,7 +169,7 @@ router.post('/login', async (req, res, next) => {
   const { email, password, accountType } = req.body as {
     email: string;
     password: string;
-    accountType?: 'student' | 'admin' | 'professor' | 'user';
+    accountType?: IAccountType;
   };
 
   if (!email || !password)
@@ -179,19 +181,14 @@ router.post('/login', async (req, res, next) => {
     let userRecord: any = null;
 
     if (accountType) {
-      const normalized =
-        accountType === 'user' ? 'student' : accountType.toLowerCase();
-      if (!['student', 'admin', 'professor'].includes(normalized)) {
-        return res.status(400).json({ message: 'Invalid accountType' });
-      }
-      role = normalized as 'user' | 'admin' | 'professor';
-      if (role === 'user') {
+      if (accountType === 'user') {
+        console.log('Looking for student with email:', email);
         userRecord = await prisma.student.findUnique({ where: { email } });
         strategy = 'local-student';
-      } else if (role === 'admin') {
+      } else if (accountType === 'admin') {
         userRecord = await prisma.admin.findUnique({ where: { email } });
         strategy = 'local-admin';
-      } else if (role === 'professor') {
+      } else if (accountType === 'professor') {
         userRecord = await prisma.professor.findUnique({ where: { email } });
         strategy = 'local-professor';
       }
@@ -256,8 +253,205 @@ router.get('/validate', (req, res) => {
   res.json({
     success: true,
     message: 'Token válido',
-    user: req.user, // Passport lo agrega automáticamente
+    user: req.user,
   });
+});
+
+router.post('/request-password-reset', async (req, res) => {
+  const { email, accountType } = req.body as {
+    email: string;
+    accountType?: IAccountType;
+  };
+  if (!email)
+    return res
+      .status(200)
+      .json({ message: 'If the account exists, we sent instructions' });
+
+  try {
+    let user: any = null;
+    let role: 'student' | 'admin' | 'professor' | null = null;
+
+    if (accountType) {
+      if (accountType === 'user') {
+        user = await prisma.student.findUnique({ where: { email } });
+        role = 'student';
+      } else if (accountType === 'admin') {
+        user = await prisma.admin.findUnique({ where: { email } });
+        role = 'admin';
+      } else if (accountType === 'professor') {
+        user = await prisma.professor.findUnique({ where: { email } });
+        role = 'professor';
+      }
+    } else {
+      const [student, admin, professor] = await Promise.all([
+        prisma.student.findUnique({ where: { email } }),
+        prisma.admin.findUnique({ where: { email } }),
+        prisma.professor.findUnique({ where: { email } }),
+      ]);
+      if (student) {
+        user = student;
+        role = 'student';
+      } else if (admin) {
+        user = admin;
+        role = 'admin';
+      } else if (professor) {
+        user = professor;
+        role = 'professor';
+      }
+    }
+
+    if (!user || !role) {
+      return res
+        .status(200)
+        .json({ message: 'If the account exists, we sent instructions' });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30);
+
+    if (role === 'student') {
+      await prisma.student.update({
+        where: { email },
+        data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt },
+      });
+    } else if (role === 'admin') {
+      await prisma.admin.update({
+        where: { email },
+        data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt },
+      });
+    } else if (role === 'professor') {
+      await prisma.professor.update({
+        where: { email },
+        data: { resetTokenHash: tokenHash, resetTokenExpiresAt: expiresAt },
+      });
+    }
+
+    // Construir URL con flag de tipo de cuenta
+    const appUrl =
+      process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const resetUrl = `${appUrl.replace(
+      /\/$/,
+      ''
+    )}/reset-password?token=${encodeURIComponent(
+      rawToken
+    )}&type=${encodeURIComponent(role)}`;
+
+    const subject = 'Recupera tu contraseña';
+    const text = `Hola,\n\nUsa este enlace para restablecer tu contraseña: ${resetUrl}\n\nExpira en 30 minutos. Si no solicitaste esto, ignora este correo.`;
+    const html = `<p>Hola,</p><p>Usa este enlace para restablecer tu contraseña:</p><p><a href="${escapeHtml(
+      resetUrl
+    )}">Restablecer contraseña</a></p><p>Expira en 30 minutos. Si no solicitaste esto, ignora este correo.</p>`;
+
+    try {
+      await sendMail({ to: email, subject, text, html });
+    } catch (e) {
+      // No revelar, responder genérico
+    }
+
+    return res
+      .status(200)
+      .json({ message: 'If the account exists, we sent instructions' });
+  } catch (err) {
+    return res
+      .status(200)
+      .json({ message: 'If the account exists, we sent instructions' });
+  }
+});
+
+// Consumir reset: establece nueva contraseña
+router.post('/reset-password', async (req, res) => {
+  const { token, accountType, newPassword } = req.body as {
+    token: string;
+    accountType: 'student' | 'admin' | 'professor' | 'user';
+    newPassword: string;
+  };
+
+  if (!token || !accountType || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: 'token, accountType and newPassword required' });
+  }
+
+  const normalized =
+    accountType === 'user' ? 'student' : accountType.toLowerCase();
+  if (!['student', 'admin', 'professor'].includes(normalized)) {
+    return res.status(400).json({ message: 'Invalid accountType' });
+  }
+
+  try {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    let user: any = null;
+    if (normalized === 'student') {
+      user = await prisma.student.findFirst({
+        where: { resetTokenHash: tokenHash },
+      });
+    } else if (normalized === 'admin') {
+      user = await prisma.admin.findFirst({
+        where: { resetTokenHash: tokenHash },
+      });
+    } else if (normalized === 'professor') {
+      user = await prisma.professor.findFirst({
+        where: { resetTokenHash: tokenHash },
+      });
+    }
+
+    if (
+      !user ||
+      !user.resetTokenExpiresAt ||
+      user.resetTokenExpiresAt < new Date()
+    ) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+
+    if (normalized === 'student') {
+      await prisma.student.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: hash,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+    } else if (normalized === 'admin') {
+      await prisma.admin.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: hash,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+    } else if (normalized === 'professor') {
+      await prisma.professor.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: hash,
+          resetTokenHash: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+    }
+
+    try {
+      await sendMail({
+        to: user.email,
+        subject: 'Tu contraseña fue cambiada',
+        text: 'Se ha cambiado la contraseña de tu cuenta. Si no fuiste tú, contacta soporte de inmediato.',
+        html: '<p>Se ha cambiado la contraseña de tu cuenta. Si no fuiste tú, contacta soporte de inmediato.</p>',
+      });
+    } catch {}
+
+    return res.json({ message: 'Password updated' });
+  } catch (err) {
+    return res.status(500).json({ message: 'Reset failed' });
+  }
 });
 
 export default router;

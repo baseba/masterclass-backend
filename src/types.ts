@@ -25,8 +25,10 @@ export interface Professor {
   profilePictureUrl: string | null;
 }
 
+export type IAccountType = 'user' | 'professor' | 'admin';
+
 export interface AuthPayload {
   id: number;
   email: string;
-  role: 'user' | 'professor' | 'admin';
+  role: IAccountType;
 }

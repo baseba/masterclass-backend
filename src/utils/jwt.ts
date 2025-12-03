@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
-import { User, Admin, Professor, AuthPayload } from '../types';
+import { User, Admin, Professor, AuthPayload, IAccountType } from '../types';
 
 export function signJwt(
   subject: User | Admin | Professor,
-  role: 'user' | 'professor' | 'admin'
+  role: IAccountType
 ): string {
   const payload: AuthPayload = { id: subject.id, email: subject.email, role };
   return jwt.sign(payload, process.env.JWT_SECRET || 'your_jwt_secret_here', {

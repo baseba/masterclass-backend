@@ -68,21 +68,26 @@ model Professor {
   profilePictureUrl String?
   courses           Course[]
   slots             Slot[]
+
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
 }
 
 model Student {
-  id           Int           @id @default(autoincrement())
-  name         String
-  email        String        @unique
-  passwordHash String
-  confirmed    Boolean       @default(false)
-  phone        String?
-  rut          String        @unique
-  courses      Course[]
-  reservations Reservation[]
-  payments     Payment[]
-  address      String?
-  pricingPlans PricingPlan[]
+  id                  Int           @id @default(autoincrement())
+  name                String
+  email               String        @unique
+  passwordHash        String
+  confirmed           Boolean       @default(false)
+  phone               String?
+  rut                 String        @unique
+  courses             Course[]
+  reservations        Reservation[]
+  payments            Payment[]
+  address             String?
+  pricingPlans        PricingPlan[]
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
 }
 
 model Course {
@@ -195,4 +200,7 @@ model Admin {
   passwordHash String
   createdAt    DateTime @default(now())
   rut          String   @unique
+
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
 }
