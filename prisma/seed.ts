@@ -146,10 +146,16 @@ async function main() {
   // absence of the table and run `prisma migrate deploy` so the seed can proceed.
   try {
     // to_regclass returns NULL if the table does not exist
-    const tableCheck: any = await prisma.$queryRaw`SELECT to_regclass('public."PricingPlan"') as tbl`;
-    const tbl = Array.isArray(tableCheck) && tableCheck[0] ? tableCheck[0].tbl : tableCheck?.tbl;
+    const tableCheck: any =
+      await prisma.$queryRaw`SELECT to_regclass('public."PricingPlan"') as tbl`;
+    const tbl =
+      Array.isArray(tableCheck) && tableCheck[0]
+        ? tableCheck[0].tbl
+        : tableCheck?.tbl;
     if (!tbl) {
-      console.log('PricingPlan table not found — running migrations (prisma migrate deploy)...');
+      console.log(
+        'PricingPlan table not found — running migrations (prisma migrate deploy)...'
+      );
       try {
         execSync('npx prisma migrate deploy', { stdio: 'inherit' });
         console.log('Migrations applied successfully.');
@@ -1368,138 +1374,6 @@ async function main() {
       course.title === 'Dinámica'
     )
       continue; // Skip, already created
-  }
-
-  const slots = [];
-  // Find the Optimización course
-  const optimizacionCourse = courses.find((c) => c.title === 'Optimización');
-
-  if (optimizacionCourse) {
-    const optimizacionClasses = classes.filter(
-      (cls) => cls.courseId === optimizacionCourse.id
-    );
-
-    // Get the last 4 classes of the course
-    const targetClasses = optimizacionClasses.slice(-4);
-
-    // Calculate the next Monday
-    const today = new Date();
-    const nextMonday = new Date();
-    nextMonday.setDate(today.getDate() + ((8 - today.getDay()) % 7));
-    nextMonday.setHours(17, 0, 0, 0);
-
-    // Create slots for the next 4 weeks
-    for (let week = 0; week < 4; week++) {
-      const targetClass = targetClasses[week];
-      if (!targetClass) continue;
-
-      for (let day = 0; day < 5; day++) {
-        // Monday to Friday
-        for (let slotIndex = 0; slotIndex < 3; slotIndex++) {
-          // 3 slots per day
-          const startTime = new Date(nextMonday);
-          startTime.setDate(nextMonday.getDate() + week * 7 + day);
-          startTime.setHours(17 + slotIndex, 0, 0, 0); // 17:00, 18:00, 19:00
-
-          const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
-
-          const modality = SlotModality.remote;
-          const location =
-            modality === SlotModality.remote ? 'online' : 'sala A1';
-          const status = 'candidate';
-          const minStudents = 1;
-          const maxStudents = 10;
-          const studentsGroup = SlotStudentsGroup.group;
-
-          // Assign a random professor from the course
-          const professorId =
-            optimizacionCourse.professors[
-              Math.floor(Math.random() * optimizacionCourse.professors.length)
-            ].id;
-
-          let existing = await prisma.slot.findFirst({
-            where: { classId: targetClass.id, startTime },
-            select: { id: true },
-          });
-
-          if (!existing) {
-            existing = await prisma.slot.create({
-              data: {
-                classId: targetClass.id,
-                professorId,
-                startTime,
-                endTime,
-                modality,
-                studentsGroup,
-                location,
-                status,
-                minStudents,
-                maxStudents,
-                // Ensure seed creates a link so seeds don't rely on DB-side gen_random_uuid()
-                link: require('crypto').randomUUID(),
-              },
-            });
-            console.log('Slot created:', {
-              classId: targetClass.id,
-              startTime,
-            });
-          }
-          slots.push(existing);
-        }
-      }
-    }
-  }
-
-  // Add "Clase Libre" to all courses
-  console.log('\nAdding "Clase Libre" to all courses...');
-  const allCourses = await prisma.course.findMany({
-    include: {
-      classes: {
-        orderBy: {
-          orderIndex: 'desc',
-        },
-        take: 1,
-      },
-    },
-  });
-
-  for (const course of allCourses) {
-    // Calculate the next orderIndex (last + 1)
-    const lastOrderIndex =
-      course.classes.length > 0 ? course.classes[0].orderIndex : -1;
-    const newOrderIndex = lastOrderIndex + 1;
-
-    // Check if "Clase Libre" already exists for this course
-    const existingFreeClass = await prisma.class.findFirst({
-      where: {
-        courseId: course.id,
-        title: 'Clase Libre',
-      },
-    });
-
-    if (existingFreeClass) {
-      console.log(
-        `"Clase Libre" already exists for course: ${course.title} (${course.acronym})`
-      );
-      continue;
-    }
-
-    // Create the "Clase Libre" class
-    await prisma.class.create({
-      data: {
-        courseId: course.id,
-        title: 'Clase Libre',
-        description:
-          'Clase libre para consultas generales, dudas específicas o temas a solicitud del estudiante.',
-        objectives:
-          'Resolver dudas puntuales, repasar contenidos específicos o profundizar en temas de interés del estudiante.',
-        orderIndex: newOrderIndex,
-      },
-    });
-
-    console.log(
-      `Created "Clase Libre" for course: ${course.title} (${course.acronym}) with orderIndex: ${newOrderIndex}`
-    );
   }
 }
 
