@@ -4,8 +4,6 @@
   - You are about to drop the column `pricingPlanId` on the `Student` table. All the data in the column will be lost.
 
 */
--- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- DropForeignKey
 ALTER TABLE "public"."Student" DROP CONSTRAINT "Student_pricingPlanId_fkey";
@@ -17,9 +15,6 @@ ADD COLUMN     "resetTokenHash" TEXT;
 -- AlterTable
 ALTER TABLE "public"."Professor" ADD COLUMN     "resetTokenExpiresAt" TIMESTAMP(3),
 ADD COLUMN     "resetTokenHash" TEXT;
-
--- AlterTable
-ALTER TABLE "public"."Slot" ALTER COLUMN "link" SET DEFAULT gen_random_uuid()::text;
 
 -- AlterTable
 ALTER TABLE "public"."Student" DROP COLUMN "pricingPlanId",
