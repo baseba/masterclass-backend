@@ -330,9 +330,7 @@ router.post('/request-password-reset', async (req, res) => {
       });
     }
 
-    // Construir URL con flag de tipo de cuenta
-    const appUrl =
-      process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const appUrl = 'www.salvaramos.cl';
     const resetUrl = `${appUrl.replace(
       /\/$/,
       ''
@@ -362,7 +360,6 @@ router.post('/request-password-reset', async (req, res) => {
   }
 });
 
-// Consumir reset: establece nueva contraseña
 router.post('/reset-password', async (req, res) => {
   const { token, accountType, newPassword } = req.body as {
     token: string;
