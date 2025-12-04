@@ -334,15 +334,13 @@ router.post('/request-password-reset', async (req, res) => {
     const resetUrl = `${appUrl.replace(
       /\/$/,
       ''
-    )}/reset-password?token=${encodeURIComponent(
+    )}/restablecer-contraseña?token=${encodeURIComponent(
       rawToken
     )}&type=${encodeURIComponent(role)}`;
 
     const subject = 'Recupera tu contraseña';
     const text = `Hola,\n\nUsa este enlace para restablecer tu contraseña: ${resetUrl}\n\nExpira en 30 minutos. Si no solicitaste esto, ignora este correo.`;
-    const html = `<p>Hola,</p><p>Usa este enlace para restablecer tu contraseña:</p><p><a href="${escapeHtml(
-      resetUrl
-    )}">Restablecer contraseña</a></p><p>Expira en 30 minutos. Si no solicitaste esto, ignora este correo.</p>`;
+    const html = `<p>Hola,</p><p>Usa este enlace para restablecer tu contraseña:</p><p><a href="${resetUrl}">Restablecer contraseña</a></p><p>Expira en 30 minutos. Si no solicitaste esto, ignora este correo.</p>`;
 
     try {
       await sendMail({ to: email, subject, text, html });
